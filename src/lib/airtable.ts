@@ -30,7 +30,7 @@ export async function saveProject(data: {
             URL: data.url,
             AgentID: data.agentId,
             LLMID: data.llmId,
-            CompanyName: data.companyName,
+            // CompanyName: data.companyName, // Field does not exist in Airtable
             SystemPrompt: data.systemPrompt,
             DemoURL: data.demoUrl,
             Status: 'Active'

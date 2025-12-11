@@ -8,13 +8,13 @@ import { saveProject, updateProject } from '@/lib/airtable';
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { url } = body;
+        const { url, recordId } = body;
 
         if (!url) {
             return NextResponse.json({ error: 'URL is required' }, { status: 400 });
         }
 
-        console.log(`Processing URL: ${url}`);
+        console.log(`Processing URL: ${url} (RecordID: ${recordId || 'New'})`);
 
         // 1. Scrape
         const siteText = await scrapeSite(url);
@@ -32,14 +32,15 @@ export async function POST(request: Request) {
         });
         console.log(`Retell Agent Created: ${retellData.agentId}`);
 
-        // 4. Save to Airtable (Initial)
+        // 4. Save/Update Airtable
         const projectId = await saveProject({
             url,
             agentId: retellData.agentId,
             llmId: retellData.llmId,
             companyName: analysis.companyName,
             systemPrompt: analysis.systemPrompt,
-            demoUrl: "" // Placeholder
+            demoUrl: "", // Placeholder
+            recordId: recordId // Pass optional ID
         });
 
         // 5. Generate Link & Update Airtable

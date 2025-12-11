@@ -17,30 +17,39 @@ export async function saveProject(data: {
     companyName: string;
     systemPrompt: string;
     demoUrl: string;
+    recordId?: string; // Optional Record ID from Airtable
 }) {
     if (!base) {
         console.warn("Airtable not configured, skipping save.");
-        // Return a mock ID so the app doesn't crash in dev
-        return "recMOCK" + Date.now();
+        return data.recordId || "recMOCK" + Date.now();
     }
 
     try {
-        const records = await base(tableName).create([
-            {
-                fields: {
-                    URL: data.url,
-                    AgentID: data.agentId,
-                    LLMID: data.llmId,
-                    CompanyName: data.companyName,
-                    SystemPrompt: data.systemPrompt,
-                    DemoURL: data.demoUrl,
-                    Status: 'Active'
-                }
-            }
-        ]);
-        return records[0].id;
+        const fields = {
+            URL: data.url,
+            AgentID: data.agentId,
+            LLMID: data.llmId,
+            CompanyName: data.companyName,
+            SystemPrompt: data.systemPrompt,
+            DemoURL: data.demoUrl,
+            Status: 'Active'
+        };
+
+        if (data.recordId) {
+            // Update existing record
+            await base(tableName).update([{
+                id: data.recordId,
+                fields: fields
+            }]);
+            return data.recordId;
+        } else {
+            // Create new record
+            const records = await base(tableName).create([{ fields }]);
+            return records[0].id;
+        }
+
     } catch (error) {
-        console.error("Airtable Save Error:", error);
+        console.error("Airtable Save/Update Error:", error);
         throw new Error("Failed to save to Airtable");
     }
 }

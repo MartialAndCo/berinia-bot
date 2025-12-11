@@ -44,6 +44,8 @@ export async function POST(request: Request) {
         });
 
         // 5. Generate Link & Update Airtable
+
+        // 5. Generate Link & Update Airtable
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
         const previewUrl = `${baseUrl}/preview/${projectId}`;
 
@@ -55,6 +57,12 @@ export async function POST(request: Request) {
             previewUrl,
             agentId: retellData.agentId,
             companyName: analysis.companyName
+        }, {
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            }
         });
 
     } catch (error: any) {
@@ -62,6 +70,24 @@ export async function POST(request: Request) {
         return NextResponse.json({
             error: 'Failed to generate preview',
             details: error.message
-        }, { status: 500 });
+        }, {
+            status: 500,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            }
+        });
     }
+}
+
+export async function OPTIONS(request: Request) {
+    return new NextResponse(null, {
+        status: 200,
+        headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+    });
 }

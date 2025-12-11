@@ -25,7 +25,8 @@ export async function saveProject(data: {
     }
 
     try {
-        const fields = {
+        // Prepare fields for the NEW Preview record
+        const fields: any = {
             URL: data.url,
             AgentID: data.agentId,
             LLMID: data.llmId,
@@ -35,22 +36,18 @@ export async function saveProject(data: {
             Status: 'Active'
         };
 
+        // If a Prospect ID is provided, LINK it (don't overwrite it)
         if (data.recordId) {
-            // Update existing record
-            await base(tableName).update([{
-                id: data.recordId,
-                fields: fields
-            }]);
-            return data.recordId;
-        } else {
-            // Create new record
-            const records = await base(tableName).create([{ fields }]);
-            return records[0].id;
+            // "Prospect" is the column name in Previews table linking to Prospects table
+            fields.Prospect = [data.recordId];
         }
 
+        // Always CREATE a new record in the Previews table
+        const records = await base(tableName).create([{ fields }]);
+        return records[0].id; // Return the new Preview ID
+
     } catch (error: any) {
-        console.error("Airtable Save/Update Error:", error);
-        // Throw the real error message to see it in the API response
+        console.error("Airtable Save Error:", error);
         throw new Error(`Airtable Error: ${error.message || JSON.stringify(error)}`);
     }
 }

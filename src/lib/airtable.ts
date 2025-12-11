@@ -48,9 +48,10 @@ export async function saveProject(data: {
             return records[0].id;
         }
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Airtable Save/Update Error:", error);
-        throw new Error("Failed to save to Airtable");
+        // Throw the real error message to see it in the API response
+        throw new Error(`Airtable Error: ${error.message || JSON.stringify(error)}`);
     }
 }
 
@@ -66,8 +67,10 @@ export async function updateProject(id: string, data: { demoUrl?: string }) {
                 }
             }
         ]);
-    } catch (error) {
+    } catch (error: any) {
         console.error("Airtable Update Error:", error);
+        // Throw real error here too if this is awaited
+        throw new Error(`Airtable Update Error: ${error.message}`);
     }
 }
 

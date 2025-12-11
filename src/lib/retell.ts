@@ -1,8 +1,15 @@
 
 import Retell from 'retell-sdk';
 
+const apiKey = process.env.RETELL_API_KEY;
+console.log(`[RETELL CONFIG] Loading API Key... Present? ${!!apiKey}, Length: ${apiKey?.length || 0}`);
+
+if (!apiKey) {
+    console.error("CRITICAL: RETELL_API_KEY is missing from process.env");
+}
+
 const retellClient = new Retell({
-    apiKey: process.env.RETELL_API_KEY || '',
+    apiKey: apiKey || 'MISSING_KEY_PLACEHOLDER',
 });
 
 interface AgentConfig {

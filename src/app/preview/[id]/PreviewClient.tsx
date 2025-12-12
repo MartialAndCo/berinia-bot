@@ -155,31 +155,27 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                                 </div>
                             </div>
 
-                            {/* --- FAKE WEBSITE CONTENT --- */}
-                            <div className="flex-1 bg-white flex flex-col overflow-hidden relative" onClick={() => isChatOpen && setIsChatOpen(false)}>
-                                {/* Fake Nav */}
-                                <div className="h-12 border-b border-neutral-100 flex items-center justify-between px-4 shrink-0 bg-white z-10">
-                                    <div className="font-bold text-neutral-800 text-sm truncate max-w-[150px]">{project.CompanyName}</div>
-                                    <div className="flex gap-3 text-neutral-400">
-                                        <ShoppingBag size={18} />
-                                        <Menu size={18} />
-                                    </div>
-                                </div>
-                                {/* Fake Hero */}
-                                <div className="bg-neutral-50 p-6 flex-1 flex flex-col items-center space-y-6 pt-12 overflow-y-auto">
-                                    <div className="w-20 h-20 bg-neutral-200 rounded-full mb-2 animate-pulse"></div>
-                                    <div className="space-y-2 w-full flex flex-col items-center">
-                                        <div className="h-4 bg-neutral-200 w-3/4 rounded animate-pulse"></div>
-                                        <div className="h-4 bg-neutral-200 w-1/2 rounded animate-pulse"></div>
-                                    </div>
-                                    <div className="space-y-2 w-full pt-8">
-                                        <div className="h-2 bg-neutral-100 w-full rounded"></div>
-                                        <div className="h-2 bg-neutral-100 w-full rounded"></div>
-                                        <div className="h-2 bg-neutral-100 w-full rounded"></div>
-                                        <div className="h-2 bg-neutral-100 w-5/6 rounded"></div>
-                                    </div>
-                                    <div className="mt-8 h-10 w-32 bg-neutral-800 rounded shadow-md"></div>
-                                </div>
+                            {/* --- REAL WEBSITE IFRAME --- */}
+                            <div className="flex-1 bg-white relative overflow-hidden" onClick={() => isChatOpen && setIsChatOpen(false)}>
+                                <iframe
+                                    src={project.URL}
+                                    className="w-full h-full border-none bg-white"
+                                    title="Client Website Preview"
+                                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                                    loading="lazy"
+                                />
+                                {/* Click overlay to close chat if open, but allow interaction if chat is closed. 
+                                    Actually, if chat is open, we want to click backdrop to close. 
+                                    The iframe eats clicks. We need a transparent div on top ONLY when chat is open? 
+                                    Or just rely on the close button. 
+                                    Let's adding a click overlay z-index when chat is open.
+                                */}
+                                {isChatOpen && (
+                                    <div
+                                        className="absolute inset-0 z-20 bg-black/10 backdrop-blur-[1px]"
+                                        onClick={() => setIsChatOpen(false)}
+                                    />
+                                )}
                             </div>
 
                             {/* --- CHAT OVERLAY (Conditional) --- */}

@@ -36,10 +36,10 @@ export async function saveProject(data: {
             Status: 'Active'
         };
 
-        // If a Prospect ID is provided, LINK it (don't overwrite it)
+        // If a Prospect ID is provided, LINK it via the "ProspectRecord" field
+        // User must create this field in Airtable as "Link to another record" -> "Prospects"
         if (data.recordId) {
-            // "Prospect" is the column name in Previews table linking to Prospects table
-            fields.Prospect = [data.recordId];
+            fields.ProspectRecord = [data.recordId];
         }
 
         // Always CREATE a new record in the Previews table

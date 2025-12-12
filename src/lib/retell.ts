@@ -8,7 +8,7 @@ if (!apiKey) {
     console.error("CRITICAL: RETELL_API_KEY is missing from process.env");
 }
 
-const retellClient = new Retell({
+export const retellClient = new Retell({
     apiKey: apiKey || 'MISSING_KEY_PLACEHOLDER',
 });
 

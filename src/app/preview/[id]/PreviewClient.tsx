@@ -1,12 +1,11 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { ChatWidget } from '@/components/ChatWidget';
-import { Mic, PhoneOff, Loader2 } from 'lucide-react';
+import { Mic, PhoneOff, Loader2, Menu, ShoppingBag, X, MessageCircle } from 'lucide-react';
 import { RetellWebClient } from 'retell-client-js-sdk';
 
-// Initialize outside component to avoid re-creation
+// Initialize outside component
 const retellClient = new RetellWebClient();
 
 interface ProjectData {
@@ -18,6 +17,7 @@ interface ProjectData {
 export function PreviewClient({ project }: { project: ProjectData }) {
     const [isCallActive, setIsCallActive] = useState(false);
     const [isCalling, setIsCalling] = useState(false);
+    const [isChatOpen, setIsChatOpen] = useState(false);
 
     useEffect(() => {
         // Setup listeners
@@ -37,7 +37,7 @@ export function PreviewClient({ project }: { project: ProjectData }) {
             console.error('Retell error:', error);
             setIsCallActive(false);
             setIsCalling(false);
-            alert('Microphone error or connection failed.');
+            // alert('Microphone error or connection failed.');
         });
 
         return () => {
@@ -53,7 +53,6 @@ export function PreviewClient({ project }: { project: ProjectData }) {
 
         setIsCalling(true);
         try {
-            // 1. Get Access Token
             const response = await fetch('/api/call/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -61,16 +60,20 @@ export function PreviewClient({ project }: { project: ProjectData }) {
             });
             const data = await response.json();
 
+            if (!response.ok) {
+                console.error("Voice API Error:", data);
+                throw new Error(data.details || data.error || "Unknown error");
+            }
+
             if (!data.accessToken) throw new Error("No token returned");
 
-            // 2. Start Call
             await retellClient.startCall({
                 accessToken: data.accessToken,
             });
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Call failed:", error);
-            alert("Failed to start voice call. Check console.");
+            alert(`Voice Call Failed: ${error.message}`);
             setIsCalling(false);
         }
     };
@@ -80,16 +83,19 @@ export function PreviewClient({ project }: { project: ProjectData }) {
             {/* Navbar */}
             <nav className="sticky top-0 z-50 bg-[#080C16]/80 backdrop-blur-md border-b border-white/10">
                 <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-                    {/* Logo */}
                     <div className="flex items-center">
                         <img
                             src="/berinia-logo.png"
                             alt="BerinIA Logo"
+                            onError={(e) => {
+                                // Fallback if logo missing
+                                (e.target as HTMLImageElement).style.display = 'none';
+                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                            }}
                             className="h-10 w-auto object-contain"
                         />
+                        <span className="hidden text-white font-bold text-xl font-heading ml-2">BerinIA</span>
                     </div>
-
-                    {/* Right Side Impact Text */}
                     <div className="text-right hidden sm:block">
                         <p className="text-white font-bold text-lg leading-tight font-heading">Never miss a call or lead again!</p>
                         <p className="text-slate-400 text-sm font-sans">Personalized AI Demo</p>
@@ -126,24 +132,18 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                             Book a Call
                         </a>
                     </div>
-
-                    <div className="pt-8 border-t border-white/10">
-                        <p className="text-sm text-slate-500 mb-2 font-medium font-heading">Trusted technology powered by</p>
-                        <div className="flex gap-4 justify-center lg:justify-start opacity-60 grayscale hover:grayscale-0 transition duration-500 cursor-default text-slate-400 font-sans text-xs">
-                            <span className="font-bold">RETELL AI</span>
-                            <span className="font-bold">GOOGLE GEMINI</span>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Right: Phone Mockup */}
                 <div id="demo" className="flex-1 w-full max-w-[400px] lg:max-w-md relative">
-                    {/* Phone Frame */}
-                    <div className="relative mx-auto border-neutral-900 bg-neutral-900 border-[14px] rounded-[2.5rem] h-[700px] w-[350px] shadow-2xl flex flex-col overflow-hidden ring-1 ring-white/10">
-                        <div className="h-[32px] w-[3px] bg-neutral-800 absolute -start-[17px] top-[72px] rounded-s-lg"></div>
-                        <div className="h-[46px] w-[3px] bg-neutral-800 absolute -start-[17px] top-[124px] rounded-s-lg"></div>
-                        <div className="h-[46px] w-[3px] bg-neutral-800 absolute -start-[17px] top-[178px] rounded-s-lg"></div>
-                        <div className="h-[64px] w-[3px] bg-neutral-800 absolute -end-[17px] top-[142px] rounded-e-lg"></div>
+                    {/* Phone Frame - Thinner Borders (8px) */}
+                    <div className="relative mx-auto border-neutral-900 bg-neutral-900 border-[8px] rounded-[2.5rem] h-[700px] w-[350px] shadow-2xl flex flex-col overflow-hidden ring-1 ring-white/10 transform duration-500 hover:scale-[1.01]">
+                        {/* Buttons */}
+                        <div className="h-[32px] w-[3px] bg-neutral-800 absolute -start-[11px] top-[72px] rounded-s-lg"></div>
+                        <div className="h-[46px] w-[3px] bg-neutral-800 absolute -start-[11px] top-[124px] rounded-s-lg"></div>
+                        <div className="h-[46px] w-[3px] bg-neutral-800 absolute -start-[11px] top-[178px] rounded-s-lg"></div>
+                        <div className="h-[64px] w-[3px] bg-neutral-800 absolute -end-[11px] top-[142px] rounded-e-lg"></div>
+
                         <div className="rounded-[2rem] overflow-hidden w-full h-full bg-white relative flex flex-col">
 
                             {/* Status Bar */}
@@ -155,54 +155,105 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                                 </div>
                             </div>
 
-                            {/* Voice Overlay (If Active) */}
+                            {/* --- FAKE WEBSITE CONTENT --- */}
+                            <div className="flex-1 bg-white flex flex-col overflow-hidden relative" onClick={() => isChatOpen && setIsChatOpen(false)}>
+                                {/* Fake Nav */}
+                                <div className="h-12 border-b border-neutral-100 flex items-center justify-between px-4 shrink-0 bg-white z-10">
+                                    <div className="font-bold text-neutral-800 text-sm truncate max-w-[150px]">{project.CompanyName}</div>
+                                    <div className="flex gap-3 text-neutral-400">
+                                        <ShoppingBag size={18} />
+                                        <Menu size={18} />
+                                    </div>
+                                </div>
+                                {/* Fake Hero */}
+                                <div className="bg-neutral-50 p-6 flex-1 flex flex-col items-center space-y-6 pt-12 overflow-y-auto">
+                                    <div className="w-20 h-20 bg-neutral-200 rounded-full mb-2 animate-pulse"></div>
+                                    <div className="space-y-2 w-full flex flex-col items-center">
+                                        <div className="h-4 bg-neutral-200 w-3/4 rounded animate-pulse"></div>
+                                        <div className="h-4 bg-neutral-200 w-1/2 rounded animate-pulse"></div>
+                                    </div>
+                                    <div className="space-y-2 w-full pt-8">
+                                        <div className="h-2 bg-neutral-100 w-full rounded"></div>
+                                        <div className="h-2 bg-neutral-100 w-full rounded"></div>
+                                        <div className="h-2 bg-neutral-100 w-full rounded"></div>
+                                        <div className="h-2 bg-neutral-100 w-5/6 rounded"></div>
+                                    </div>
+                                    <div className="mt-8 h-10 w-32 bg-neutral-800 rounded shadow-md"></div>
+                                </div>
+                            </div>
+
+                            {/* --- CHAT OVERLAY (Conditional) --- */}
+                            {/* It covers 85% of screen when open */}
+                            {isChatOpen && (
+                                <div className="absolute inset-x-0 bottom-0 top-[12%] rounded-t-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden animate-in slide-in-from-bottom-full duration-500 ease-out z-30 ring-1 ring-black/5">
+                                    <div className="relative flex-1 bg-white flex flex-col h-full">
+                                        {/* Close Button Overlay */}
+                                        <button
+                                            onClick={() => setIsChatOpen(false)}
+                                            className="absolute top-4 right-4 z-50 p-2 bg-neutral-100 hover:bg-neutral-200 rounded-full text-neutral-500 transition-colors shadow-sm"
+                                        >
+                                            <X size={16} />
+                                        </button>
+
+                                        <ChatWidget
+                                            agentId={project.AgentID}
+                                            companyName={project.CompanyName}
+                                            isEmbedded={true}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* --- VOICE OVERLAY (When Active) --- */}
                             {isCallActive && (
-                                <div className="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center text-white animate-in fade-in duration-300">
-                                    <div className="mb-8 w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
+                                <div className="absolute inset-0 z-50 bg-black/95 flex flex-col items-center justify-center text-white animate-in fade-in duration-300 backdrop-blur-sm">
+                                    <div className="mb-8 w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center animate-pulse ring-4 ring-primary/10">
                                         <Mic className="w-10 h-10 text-primary" />
                                     </div>
                                     <h3 className="text-xl font-heading mb-2">Voice Demo Active</h3>
                                     <p className="text-white/60 mb-8 text-center px-6">Listening...</p>
                                     <button
                                         onClick={toggleVoice}
-                                        className="px-6 py-3 rounded-full bg-red-500 hover:bg-red-600 text-white font-medium flex items-center gap-2 transition-colors"
+                                        className="px-8 py-4 rounded-full bg-red-500 hover:bg-red-600 text-white font-medium flex items-center gap-2 transition-colors shadow-lg hover:shadow-red-500/25"
                                     >
-                                        <PhoneOff className="w-4 h-4" /> End Call
+                                        <PhoneOff className="w-5 h-5" /> End Call
                                     </button>
                                 </div>
                             )}
 
-                            {/* Chat Interface (Full Height) */}
-                            <div className="flex-1 relative">
-                                <ChatWidget
-                                    agentId={project.AgentID}
-                                    companyName={project.CompanyName}
-                                    isEmbedded={true}
-                                />
+                            {/* --- FAB TRIGGERS --- */}
+                            {/* Only show when not in call */}
+                            {!isCallActive && (
+                                <div className="absolute bottom-5 right-5 z-40 flex flex-col gap-4 items-end pointer-events-none">
 
-                                {/* Voice Trigger Button (Floating over chat at bottom) */}
-                                <div className="absolute bottom-20 left-4 right-4 z-40">
-                                    {!isCallActive && (
+                                    {/* Voice FAB (Small & Subtle) */}
+                                    <button
+                                        onClick={() => {
+                                            if (!isChatOpen) setIsChatOpen(true);
+                                            toggleVoice();
+                                        }}
+                                        disabled={isCalling}
+                                        className="pointer-events-auto w-12 h-12 rounded-full bg-black/80 backdrop-blur-md text-white flex items-center justify-center shadow-lg hover:scale-110 transition-all border border-white/10 group hover:bg-black"
+                                        title="Test Voice Agent"
+                                    >
+                                        {isCalling ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mic className="w-5 h-5 group-hover:text-primary transition-colors" />}
+                                    </button>
+
+                                    {/* Chat FAB (If closed) */}
+                                    {!isChatOpen && (
                                         <button
-                                            onClick={toggleVoice}
-                                            disabled={isCalling}
-                                            className="w-full bg-black/80 backdrop-blur-md hover:bg-black text-white p-4 rounded-xl flex items-center justify-center gap-3 transition-all border border-white/10 shadow-lg group"
+                                            onClick={() => setIsChatOpen(true)}
+                                            className="pointer-events-auto w-14 h-14 rounded-full bg-primary text-white shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-primary/90 hover:shadow-primary/25"
                                         >
-                                            {isCalling ? (
-                                                <Loader2 className="w-5 h-5 animate-spin" />
-                                            ) : (
-                                                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center group-hover:scale-110 transition-transform">
-                                                    <Mic className="w-4 h-4 text-white" />
-                                                </div>
-                                            )}
-                                            <div className="text-left">
-                                                <div className="text-sm font-bold">Test Voice Agent</div>
-                                                <div className="text-xs text-white/60">Free AI Call Simulation</div>
+                                            <div className="relative">
+                                                <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-primary"></div>
+                                                <MessageCircle size={26} />
                                             </div>
                                         </button>
                                     )}
                                 </div>
-                            </div>
+                            )}
+
                         </div>
                     </div>
 
@@ -214,19 +265,16 @@ export function PreviewClient({ project }: { project: ProjectData }) {
 
             {/* Calendar Section */}
             <section id="calendar" className="w-full bg-background py-24 border-t border-white/5 relative">
-                {/* Background Glow */}
                 <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none"></div>
-
                 <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
                     <h2 className="text-3xl font-bold mb-4 text-white font-heading">Ready to implement this?</h2>
                     <p className="text-slate-400 mb-12 font-sans">Book a time with us to discuss your custom AI integration.</p>
-
-                    {/* Cal.com Embed */}
                     <div className="w-full h-[650px] rounded-2xl border border-white/10 shadow-2xl overflow-hidden bg-white/5 backdrop-blur-sm flex items-center justify-center">
                         <iframe
                             src="https://cal.com/berinia-ukf1ty/berinia-demo"
                             className="w-full h-full"
                             title="Book a meeting"
+                            loading="lazy"
                         ></iframe>
                     </div>
                 </div>

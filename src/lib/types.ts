@@ -5,3 +5,12 @@ export interface ProjectData {
     CompanyName: string;
     SystemPrompt: string;
 }
+
+export interface ScrapingMission {
+    id: string;
+    keyword: string;
+    location: string;
+    maxLeads: number;
+    status: 'Active' | 'Inactive';
+    lastRun?: string;
+}

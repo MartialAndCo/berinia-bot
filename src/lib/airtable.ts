@@ -97,3 +97,51 @@ export async function getProject(id: string): Promise<ProjectData | null> {
         return null;
     }
 }
+
+import { ScrapingMission } from './types';
+
+const configTableId = process.env.AIRTABLE_CONFIG_TABLE_ID || 'tblConfig'; // Use ID or Name if ID not set
+
+export async function getActiveScrapingMissions(): Promise<ScrapingMission[]> {
+    if (!base) return [];
+
+    try {
+        const records = await base(configTableId).select({
+            filterByFormula: "{Status} = 'Active'"
+        }).all();
+
+        return records.map(record => ({
+            id: record.id,
+            keyword: record.get('Keyword') as string,
+            location: record.get('Location') as string,
+            maxLeads: (record.get('MaxLeads') as number) || 20,
+            status: record.get('Status') as 'Active',
+            lastRun: record.get('LastRun') as string,
+        }));
+    } catch (error) {
+        console.error("Error fetching active missions:", error);
+        return [];
+    }
+}
+
+export async function getAllScrapingMissions(): Promise<ScrapingMission[]> {
+    if (!base) return [];
+
+    try {
+        const records = await base(configTableId).select({
+            sort: [{ field: "Status", direction: "asc" }]
+        }).all();
+
+        return records.map(record => ({
+            id: record.id,
+            keyword: record.get('Keyword') as string,
+            location: record.get('Location') as string,
+            maxLeads: (record.get('MaxLeads') as number) || 20,
+            status: record.get('Status') as 'Active' | 'Inactive',
+            lastRun: record.get('LastRun') as string,
+        }));
+    } catch (error) {
+        console.error("Error fetching missions:", error);
+        return [];
+    }
+}

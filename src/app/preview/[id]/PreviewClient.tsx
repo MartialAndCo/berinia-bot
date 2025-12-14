@@ -208,7 +208,7 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                                         </button>
 
                                         <ChatWidget
-                                            agentId={project.AgentID}
+                                            agentId={project.AgentID || ''}
                                             companyName={project.CompanyName}
                                             isEmbedded={true}
                                         />

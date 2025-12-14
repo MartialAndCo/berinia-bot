@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
     AIRTABLE_BASE_ID: process.env.AIRTABLE_BASE_ID,
     AIRTABLE_TABLE_NAME: process.env.AIRTABLE_TABLE_NAME,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
+    SCRAP_ADMIN_PASSWORD: process.env.SCRAP_ADMIN_PASSWORD,
   },
   async headers() {
     return [

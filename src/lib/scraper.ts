@@ -39,7 +39,15 @@ export async function scrapeSite(url: string) {
     return fullContent.slice(0, 100000);
 
   } catch (error) {
-    console.error('Error scraping site:', error);
+    console.error('Error scraping site:', (error as any).message || error);
+    if (axios.isAxiosError(error)) {
+      console.error('Axios Error Details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        headers: error.response?.headers,
+        url: error.config?.url
+      });
+    }
     // Return minimal context on failure
     return "Title: Error Scraping\nDescription: Could not access site.\n\nContent:\n";
   }

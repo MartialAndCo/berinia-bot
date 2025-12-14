@@ -7,9 +7,11 @@ const ADMIN_PASSWORD = process.env.SCRAP_ADMIN_PASSWORD || process.env.ADMIN_PAS
 
 export async function verifyPassword(password: string) {
     if (!ADMIN_PASSWORD) {
-        console.warn("ADMIN_PASSWORD not set in env");
-        return { success: false, error: "System configuration error" };
+        console.warn("ADMIN_PASSWORD check: MISSING in env process.env");
+        console.log("Available Env Keys:", Object.keys(process.env).filter(k => !k.includes('KEY') && !k.includes('SECRET'))); // Log non-sensitive keys
+        return { success: false, error: "System configuration error (Env Var Missing)" };
     }
+    // console.log("ADMIN_PASSWORD check: Present"); // Uncomment for deeper debug if needed
 
     if (password === ADMIN_PASSWORD) {
         const cookieStore = await cookies();

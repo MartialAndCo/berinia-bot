@@ -76,9 +76,15 @@ export function PreviewClient({ project }: { project: ProjectData }) {
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
+        // Singleton Check: Prevent double injection
+        if (document.getElementById('retell-widget')) {
+            console.log("[Retell Debug] Widget script already exists. Skipping injection.");
+            return;
+        }
+
         const publicKey = process.env.NEXT_PUBLIC_RETELL_PUBLIC_KEY || "public_key_21ebdde551b259a1263d6";
 
-        console.log("[Retell Debug] Injecting Widget...");
+        console.log("[Retell Debug] Injecting Widget (Singleton)...");
         console.log("[Retell Debug] Public Key:", publicKey);
         console.log("[Retell Debug] Agent ID:", envChatAgentId);
 
@@ -93,7 +99,7 @@ export function PreviewClient({ project }: { project: ProjectData }) {
         script.async = true;
 
         // Attributes
-        script.setAttribute('data-public-key', process.env.NEXT_PUBLIC_RETELL_PUBLIC_KEY || "public_key_21ebdde551b259a1263d6");
+        script.setAttribute('data-public-key', publicKey);
         script.setAttribute('data-agent-id', envChatAgentId);
         script.setAttribute('data-title', `Chat with ${project.CompanyName}`);
         script.setAttribute('data-bot-name', "AI Assistant");
@@ -102,13 +108,12 @@ export function PreviewClient({ project }: { project: ProjectData }) {
 
         document.body.appendChild(script);
 
-        return () => {
-            // Cleanup: Remove script if component unmounts (rare for page navigation but good practice)
-            // Note: Retell widget might leave DOM nodes behind, we can try to clean the script tag
-            if (document.body.contains(script)) {
-                document.body.removeChild(script);
-            }
-        };
+        // Debug verify
+        setTimeout(() => {
+            console.log("[Retell Debug] Script in DOM?", !!document.getElementById('retell-widget'));
+        }, 500);
+
+        // CLEANUP REMOVED: To prevent race condition where script is removed before it executes
     }, [envChatAgentId, project.CompanyName]);
 
     const toggleVoice = async () => {

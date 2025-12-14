@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
     SCRAP_ADMIN_PASSWORD: process.env.SCRAP_ADMIN_PASSWORD,
+    NEXT_PUBLIC_RETELL_PUBLIC_KEY: process.env.NEXT_PUBLIC_RETELL_PUBLIC_KEY,
   },
   async headers() {
     return [

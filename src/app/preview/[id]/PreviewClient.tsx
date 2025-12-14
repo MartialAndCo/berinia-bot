@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ChatWidget } from '@/components/ChatWidget';
+// import { ChatWidget } from '@/components/ChatWidget'; // Removed for Hybrid Widget
 import { Mic, PhoneOff, Loader2, Menu, ShoppingBag, X, MessageCircle } from 'lucide-react';
 import { RetellWebClient } from 'retell-client-js-sdk';
 
@@ -17,6 +17,11 @@ export function PreviewClient({ project }: { project: ProjectData }) {
     const envVoiceAgentId = process.env.NEXT_PUBLIC_VOICE_AGENT_ID || '';
     const envChatAgentId = process.env.NEXT_PUBLIC_CHAT_AGENT_ID || envVoiceAgentId; // Use Voice ID as fallback if Chat ID missing
     const effectiveAgentId = project.AgentID || envVoiceAgentId; // Prefer project specific if exists (backwards compat), else Env
+
+    useEffect(() => {
+        if (!effectiveAgentId) console.warn("Agent ID Missing: Voice Agent ID is not set (Check NEXT_PUBLIC_VOICE_AGENT_ID)");
+        if (!envChatAgentId) console.warn("Agent ID Missing: Chat Agent ID is not set (Check NEXT_PUBLIC_CHAT_AGENT_ID)");
+    }, [effectiveAgentId, envChatAgentId]);
 
     const [isCalling, setIsCalling] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
@@ -186,41 +191,26 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                                     sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
                                     loading="lazy"
                                 />
-                                {/* Click overlay to close chat if open, but allow interaction if chat is closed. 
-                                    Actually, if chat is open, we want to click backdrop to close. 
-                                    The iframe eats clicks. We need a transparent div on top ONLY when chat is open? 
-                                    Or just rely on the close button. 
-                                    Let's adding a click overlay z-index when chat is open.
-                                */}
-                                {isChatOpen && (
-                                    <div
-                                        className="absolute inset-0 z-20 bg-black/10 backdrop-blur-[1px]"
-                                        onClick={() => setIsChatOpen(false)}
-                                    />
-                                )}
+                                {/* Overlay if needed, but for now kept clean */}
                             </div>
 
-                            {/* --- CHAT OVERLAY (Conditional) --- */}
-                            {/* It covers 85% of screen when open */}
-                            {isChatOpen && (
-                                <div className="absolute inset-x-0 bottom-0 top-[12%] rounded-t-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden animate-in slide-in-from-bottom-full duration-500 ease-out z-30 ring-1 ring-black/5">
-                                    <div className="relative flex-1 bg-white flex flex-col h-full">
-                                        {/* Close Button Overlay */}
-                                        <button
-                                            onClick={() => setIsChatOpen(false)}
-                                            className="absolute top-4 right-4 z-50 p-2 bg-neutral-100 hover:bg-neutral-200 rounded-full text-neutral-500 transition-colors shadow-sm"
-                                        >
-                                            <X size={16} />
-                                        </button>
+                            {/* --- RETELL OFFICIAL WIDGET INJECTION --- */}
+                            {/* 
+                                HYBRID APPROACH: 
+                                1. We inject the official script for Text Chat.
+                                2. We keep the Voice SDK for the custom "Voice Call" button.
+                            */}
+                            <script
+                                src="https://dashboard.retellai.com/retell-widget.js"
+                                data-public-key={process.env.NEXT_PUBLIC_RETELL_PUBLIC_KEY || "public_key_21ebdde551b259a1263d6"}
+                                data-agent-id={envChatAgentId}
+                                data-title={`Chat with ${project.CompanyName}`}
+                                data-bot-name="AI Assistant"
+                                data-show-ai-popup="true"
+                                data-auto-open="false"
+                                async
+                            ></script>
 
-                                        <ChatWidget
-                                            agentId={envChatAgentId}
-                                            companyName={project.CompanyName}
-                                            isEmbedded={true}
-                                        />
-                                    </div>
-                                </div>
-                            )}
 
                             {/* --- VOICE OVERLAY (When Active) --- */}
                             {isCallActive && (
@@ -240,14 +230,12 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                             )}
 
                             {/* --- FAB TRIGGERS --- */}
-                            {/* Only show when not in call */}
+                            {/* Only show when not in call. Only show Voice FAB. Chat FAB is now handled by Retell Widget. */}
                             {!isCallActive && (
-                                <div className="absolute bottom-5 right-5 z-40 flex flex-col gap-4 items-end pointer-events-none">
-
-                                    {/* Voice FAB (Small & Subtle) */}
+                                <div className="absolute bottom-5 right-20 z-40 flex flex-col gap-4 items-end pointer-events-none">
+                                    {/* Voice FAB (Moved slightly left to avoid blocking Widget) */}
                                     <button
                                         onClick={() => {
-                                            if (!isChatOpen) setIsChatOpen(true);
                                             toggleVoice();
                                         }}
                                         disabled={isCalling}
@@ -256,19 +244,6 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                                     >
                                         {isCalling ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mic className="w-5 h-5 group-hover:text-primary transition-colors" />}
                                     </button>
-
-                                    {/* Chat FAB (If closed) */}
-                                    {!isChatOpen && (
-                                        <button
-                                            onClick={() => setIsChatOpen(true)}
-                                            className="pointer-events-auto w-14 h-14 rounded-full bg-primary text-white shadow-xl flex items-center justify-center hover:scale-110 transition-all hover:bg-primary/90 hover:shadow-primary/25"
-                                        >
-                                            <div className="relative">
-                                                <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-primary"></div>
-                                                <MessageCircle size={26} />
-                                            </div>
-                                        </button>
-                                    )}
                                 </div>
                             )}
 

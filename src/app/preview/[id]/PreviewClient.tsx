@@ -185,7 +185,7 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                             {/* --- REAL WEBSITE IFRAME --- */}
                             <div className="flex-1 bg-white relative overflow-hidden" onClick={() => isChatOpen && setIsChatOpen(false)}>
                                 <iframe
-                                    src={project.URL}
+                                    src={project.URL?.match(/^https?:\/\//) ? project.URL : `https://${project.URL}`}
                                     className="w-full h-full border-none bg-white"
                                     title="Client Website Preview"
                                     sandbox="allow-same-origin allow-scripts allow-forms allow-popups"

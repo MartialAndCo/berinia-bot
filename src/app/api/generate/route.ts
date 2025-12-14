@@ -14,14 +14,23 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'URL is required' }, { status: 400 });
         }
 
-        console.log(`Processing URL: ${url} (RecordID: ${recordId || 'New'})`);
+        // Normalize URL (Prepend https:// if missing) to ensure absolute path for iframe
+        let normalizedUrl = url.trim();
+        if (!/^https?:\/\//i.test(normalizedUrl)) {
+            normalizedUrl = `https://${normalizedUrl}`;
+        }
+
+        console.log(`Processing URL: ${normalizedUrl} (Original: ${url}, RecordID: ${recordId || 'New'})`);
+
+        // Update variable for downstream use
+        const targetUrl = normalizedUrl;
 
         // 1. Scrape
-        const siteText = await scrapeSite(url);
+        const siteText = await scrapeSite(targetUrl);
         console.log(`Scraped ${siteText.length} chars.`);
 
         // 2. Analyze (Generate KnowledgeBaseSummary)
-        const analysis = await analyzeSiteContent(siteText, url);
+        const analysis = await analyzeSiteContent(siteText, targetUrl);
         console.log(`Analysis complete for ${analysis.companyName}`);
 
         // 3. Get Fixed Agent IDs
@@ -33,7 +42,7 @@ export async function POST(request: Request) {
 
         // 4. Save/Update Airtable
         const projectId = await saveProject({
-            url,
+            url: targetUrl,
             agentId: voiceAgentId || "MISSING_AGENT_ID",
             companyName: analysis.companyName,
             knowledgeBaseSummary: analysis.knowledgeBaseSummary,

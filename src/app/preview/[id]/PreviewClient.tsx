@@ -12,6 +12,12 @@ import { ProjectData } from '@/lib/types';
 
 export function PreviewClient({ project }: { project: ProjectData }) {
     const [isCallActive, setIsCallActive] = useState(false);
+
+    // Fallback to Env Vars since AgentID column is deleted
+    const envVoiceAgentId = process.env.NEXT_PUBLIC_VOICE_AGENT_ID || '';
+    const envChatAgentId = process.env.NEXT_PUBLIC_CHAT_AGENT_ID || envVoiceAgentId; // Use Voice ID as fallback if Chat ID missing
+    const effectiveAgentId = project.AgentID || envVoiceAgentId; // Prefer project specific if exists (backwards compat), else Env
+
     const [isCalling, setIsCalling] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
@@ -72,7 +78,7 @@ export function PreviewClient({ project }: { project: ProjectData }) {
             const response = await fetch('/api/call/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ agentId: project.AgentID || '' })
+                body: JSON.stringify({ agentId: effectiveAgentId })
             });
             const data = await response.json();
 
@@ -208,7 +214,7 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                                         </button>
 
                                         <ChatWidget
-                                            agentId={project.AgentID || ''}
+                                            agentId={envChatAgentId}
                                             companyName={project.CompanyName}
                                             isEmbedded={true}
                                         />

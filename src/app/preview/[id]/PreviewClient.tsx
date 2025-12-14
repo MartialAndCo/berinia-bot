@@ -133,9 +133,12 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                         // Check for Retell Widget container (it usually has a shadow root or specific class)
                         // Heuristic: Look for elements added by the script. 
                         // Often it's a custom element <retell-widget> or a div with ID.
+                        const style = window.getComputedStyle(node);
                         if (node.tagName.toLowerCase().includes('retell') ||
                             node.id.includes('retell') ||
-                            node.className.includes('retell')) {
+                            node.className.includes('retell') ||
+                            // Heuristic: High Z-Index & Fixed Position (The "Anonymous" Widget)
+                            (node.tagName === 'DIV' && style.zIndex && parseInt(style.zIndex) > 9000 && style.position === 'fixed')) {
 
                             console.log("[Retell Debug] Captured Widget Node:", node);
 

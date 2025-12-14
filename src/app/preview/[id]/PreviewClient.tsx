@@ -88,6 +88,7 @@ export function PreviewClient({ project }: { project: ProjectData }) {
         }
 
         const script = document.createElement('script');
+        script.id = 'retell-widget'; // CRITICAL: Widget looks for this ID to read config
         script.src = "https://dashboard.retellai.com/retell-widget.js";
         script.async = true;
 

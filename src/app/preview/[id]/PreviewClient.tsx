@@ -161,6 +161,11 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                                 }
                             });
                             styleObserver.observe(node, { attributes: true, attributeFilter: ['style'] });
+                        } else {
+                            // Log other nodes to help identify the widget if we missed it
+                            if (node.tagName !== 'SCRIPT' && node.tagName !== 'LINK') {
+                                console.log("[Retell Debug] Ignored Node:", node.tagName, node.id, node.className);
+                            }
                         }
                     }
                 });
@@ -284,7 +289,11 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                         <div className="h-[46px] w-[3px] bg-neutral-800 absolute -start-[11px] top-[178px] rounded-s-lg"></div>
                         <div className="h-[64px] w-[3px] bg-neutral-800 absolute -end-[11px] top-[142px] rounded-e-lg"></div>
 
-                        <div ref={phoneScreenRef} className="rounded-[2rem] overflow-hidden w-full h-full bg-white relative flex flex-col">
+                        <div
+                            ref={phoneScreenRef}
+                            style={{ transform: 'translateZ(0)' }} // TRAP FIXED ELEMENTS: Makes position:fixed relative to this container
+                            className="rounded-[2rem] overflow-hidden w-full h-full bg-white relative flex flex-col"
+                        >
 
                             {/* Status Bar */}
                             <div className="h-6 bg-black text-white text-[10px] px-4 flex items-center justify-between z-20 shrink-0">

@@ -76,6 +76,17 @@ export function PreviewClient({ project }: { project: ProjectData }) {
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
+        const publicKey = process.env.NEXT_PUBLIC_RETELL_PUBLIC_KEY || "public_key_21ebdde551b259a1263d6";
+
+        console.log("[Retell Debug] Injecting Widget...");
+        console.log("[Retell Debug] Public Key:", publicKey);
+        console.log("[Retell Debug] Agent ID:", envChatAgentId);
+
+        if (!publicKey || !envChatAgentId) {
+            console.error("[Retell Debug] Aborting injection: Missing Key or Agent ID");
+            return;
+        }
+
         const script = document.createElement('script');
         script.src = "https://dashboard.retellai.com/retell-widget.js";
         script.async = true;

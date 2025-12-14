@@ -8,11 +8,7 @@ import { RetellWebClient } from 'retell-client-js-sdk';
 // Initialize outside component
 const retellClient = new RetellWebClient();
 
-interface ProjectData {
-    URL: string;
-    AgentID: string;
-    CompanyName: string;
-}
+import { ProjectData } from '@/lib/types';
 
 export function PreviewClient({ project }: { project: ProjectData }) {
     const [isCallActive, setIsCallActive] = useState(false);
@@ -76,7 +72,7 @@ export function PreviewClient({ project }: { project: ProjectData }) {
             const response = await fetch('/api/call/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ agentId: project.AgentID })
+                body: JSON.stringify({ agentId: project.AgentID || '' })
             });
             const data = await response.json();
 

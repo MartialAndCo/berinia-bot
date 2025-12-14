@@ -72,6 +72,33 @@ export function PreviewClient({ project }: { project: ProjectData }) {
         };
     }, []);
 
+    // --- INJECT RETELL WIDGET SCRIPT ---
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const script = document.createElement('script');
+        script.src = "https://dashboard.retellai.com/retell-widget.js";
+        script.async = true;
+
+        // Attributes
+        script.setAttribute('data-public-key', process.env.NEXT_PUBLIC_RETELL_PUBLIC_KEY || "public_key_21ebdde551b259a1263d6");
+        script.setAttribute('data-agent-id', envChatAgentId);
+        script.setAttribute('data-title', `Chat with ${project.CompanyName}`);
+        script.setAttribute('data-bot-name', "AI Assistant");
+        script.setAttribute('data-show-ai-popup', "true");
+        script.setAttribute('data-auto-open', "false"); // Start closed
+
+        document.body.appendChild(script);
+
+        return () => {
+            // Cleanup: Remove script if component unmounts (rare for page navigation but good practice)
+            // Note: Retell widget might leave DOM nodes behind, we can try to clean the script tag
+            if (document.body.contains(script)) {
+                document.body.removeChild(script);
+            }
+        };
+    }, [envChatAgentId, project.CompanyName]);
+
     const toggleVoice = async () => {
         if (isCallActive) {
             retellClient.stopCall();
@@ -197,19 +224,10 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                             {/* --- RETELL OFFICIAL WIDGET INJECTION --- */}
                             {/* 
                                 HYBRID APPROACH: 
-                                1. We inject the official script for Text Chat.
+                                1. We inject the official script for Text Chat using useEffect to ensure execution.
                                 2. We keep the Voice SDK for the custom "Voice Call" button.
                             */}
-                            <script
-                                src="https://dashboard.retellai.com/retell-widget.js"
-                                data-public-key={process.env.NEXT_PUBLIC_RETELL_PUBLIC_KEY || "public_key_21ebdde551b259a1263d6"}
-                                data-agent-id={envChatAgentId}
-                                data-title={`Chat with ${project.CompanyName}`}
-                                data-bot-name="AI Assistant"
-                                data-show-ai-popup="true"
-                                data-auto-open="false"
-                                async
-                            ></script>
+                            {/* Script injected via useEffect below */}
 
 
                             {/* --- VOICE OVERLAY (When Active) --- */}

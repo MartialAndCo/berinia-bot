@@ -9,6 +9,7 @@ interface PageProps {
 export default async function PreviewPage({ params }: PageProps) {
     const { id } = await params;
     const project = await getProject(id);
+    console.log(`[Preview] Loaded project ${id}. Status: ${project?.Status}`);
 
     if (!project) {
         return (

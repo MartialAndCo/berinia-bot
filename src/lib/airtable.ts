@@ -1,4 +1,3 @@
-
 import Airtable from 'airtable';
 
 const baseId = process.env.AIRTABLE_BASE_ID;
@@ -27,7 +26,7 @@ export async function saveProject(data: {
     try {
         const fields: any = {
             URL: data.url,
-            AgentID: data.agentId,
+            // AgentID: data.agentId, // Removed as column deleted
             // LLMID: data.llmId, // Optional, might not be needed for fixed agents
             KnowledgeBaseSummary: data.knowledgeBaseSummary,
             DemoURL: data.demoUrl,
@@ -47,7 +46,7 @@ export async function saveProject(data: {
 
     } catch (error: any) {
         console.error("Airtable Save Error:", error);
-        throw new Error(`Airtable Error: ${error.message || JSON.stringify(error)}`);
+        throw new Error(`Airtable Error: ${error.message || JSON.stringify(error)} `);
     }
 }
 
@@ -67,7 +66,7 @@ export async function updateProject(id: string, data: { demoUrl?: string, status
     } catch (error: any) {
         console.error("Airtable Update Error:", error);
         // Throw real error here too if this is awaited
-        throw new Error(`Airtable Update Error: ${error.message}`);
+        throw new Error(`Airtable Update Error: ${error.message} `);
     }
 }
 
@@ -88,7 +87,7 @@ export async function getProject(id: string): Promise<ProjectData | null> {
         const record = await base(tableName).find(id);
         return {
             URL: record.get('URL') as string,
-            AgentID: record.get('AgentID') as string,
+            // AgentID: record.get('AgentID') as string,
             CompanyName: record.get('CompanyName') as string,
             KnowledgeBaseSummary: record.get('KnowledgeBaseSummary') as string,
             Status: record.get('Status') as string,
@@ -256,7 +255,7 @@ export async function getAllProjects(): Promise<any[]> {
             id: record.id,
             url: record.get('URL') as string,
             companyName: record.get('CompanyName') as string,
-            agentId: record.get('AgentID') as string,
+            // agentId: record.get('AgentID') as string,
             summary: record.get('KnowledgeBaseSummary') as string,
             demoUrl: record.get('DemoURL') as string,
             status: record.get('Status') as string,

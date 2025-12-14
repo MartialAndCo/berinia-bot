@@ -1,7 +1,7 @@
 
 export interface ProjectData {
     URL: string;
-    AgentID: string;
+    AgentID?: string; // Made optional/deprecated
     CompanyName: string;
     KnowledgeBaseSummary: string;
     Status?: string; // e.g. 'Active', 'Inactive'

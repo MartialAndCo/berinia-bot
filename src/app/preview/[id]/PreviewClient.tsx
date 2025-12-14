@@ -114,7 +114,60 @@ export function PreviewClient({ project }: { project: ProjectData }) {
         }, 500);
 
         // CLEANUP REMOVED: To prevent race condition where script is removed before it executes
+        // CLEANUP REMOVED: To prevent race condition where script is removed before it executes
     }, [envChatAgentId, project.CompanyName]);
+
+    // --- WIDGET CONTAINMENT LOGIC ---
+    // The user wants the widget INSIDE the phone iframe area. 
+    // Since we can't put it in the iframe, we put it in the phone container (relative parent) 
+    // and force the widget (fixed) to be absolute within that container.
+    const phoneScreenRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!phoneScreenRef.current) return;
+
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node instanceof HTMLElement) {
+                        // Check for Retell Widget container (it usually has a shadow root or specific class)
+                        // Heuristic: Look for elements added by the script. 
+                        // Often it's a custom element <retell-widget> or a div with ID.
+                        if (node.tagName.toLowerCase().includes('retell') ||
+                            node.id.includes('retell') ||
+                            node.className.includes('retell')) {
+
+                            console.log("[Retell Debug] Captured Widget Node:", node);
+
+                            // Move it to phone container
+                            phoneScreenRef.current?.appendChild(node);
+
+                            // Force styles to contain it
+                            node.style.position = 'absolute';
+                            node.style.bottom = '20px';
+                            node.style.right = '20px';
+                            node.style.zIndex = '50';
+                            node.style.fontFamily = 'inherit';
+                        }
+                    }
+                });
+            });
+        });
+
+        observer.observe(document.body, { childList: true, subtree: false });
+
+        // Also check if it's already there (in case we missed the event)
+        const existing = document.querySelector('retell-widget') || document.getElementById('retell-widget-container');
+        if (existing && phoneScreenRef.current && !phoneScreenRef.current.contains(existing)) {
+            console.log("[Retell Debug] Moving existing widget to phone container");
+            phoneScreenRef.current.appendChild(existing);
+            (existing as HTMLElement).style.position = 'absolute';
+            (existing as HTMLElement).style.bottom = '20px';
+            (existing as HTMLElement).style.right = '20px';
+        }
+
+        return () => observer.disconnect();
+    }, []);
 
     const toggleVoice = async () => {
         if (isCallActive) {
@@ -215,7 +268,7 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                         <div className="h-[46px] w-[3px] bg-neutral-800 absolute -start-[11px] top-[178px] rounded-s-lg"></div>
                         <div className="h-[64px] w-[3px] bg-neutral-800 absolute -end-[11px] top-[142px] rounded-e-lg"></div>
 
-                        <div className="rounded-[2rem] overflow-hidden w-full h-full bg-white relative flex flex-col">
+                        <div ref={phoneScreenRef} className="rounded-[2rem] overflow-hidden w-full h-full bg-white relative flex flex-col">
 
                             {/* Status Bar */}
                             <div className="h-6 bg-black text-white text-[10px] px-4 flex items-center justify-between z-20 shrink-0">

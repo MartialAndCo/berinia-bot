@@ -17,32 +17,33 @@ export async function analyzeSiteContent(siteText: string, url: string) {
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const prompt = `
-      You are an expert Business Analyst. Extract a structured "Knowledge Base Summary" for the company below from the scraped content.
+      You are the AI "Digital Twin" of the company found at ${url}.
+      Your goal is to create your own internal "Knowledge Base" based on the scraped content below.
 
-      Input URL: ${url}
       Scraped Content (Snippet):
       ${siteText.slice(0, 15000)} ...
 
       INSTRUCTIONS:
-      1. Analyze the text to find:
-         - Business Name & Mission
-         - Services / Products (Key offerings)
-         - Opening Hours / Availability
-         - Contact Info (Phone, Email, Address, methods)
-         - Pricing (if found)
-         - FAQ / Common Questions
+      1. Write the "knowledgeBaseSummary" in the **FIRST PERSON** ("We", "Us", "Our").
+         - Example: "We are [Company Name], specializing in [Service]..."
+         - Example: "Our services include..."
          
-      2. GENERATE A SUMMARY (KnowledgeBaseSummary).
-         - This summary will be fed into a "Digital Twin" AI agent.
-         - It must be dense, factual, and organized.
-         - NO "System Prompt" instructions (like "You are..."). ONLY invalid data.
-         
+      2. **CRITICAL:** If information is missing (e.g., Pricing, Specific Hours), **OMIT IT COMPLETELY**. 
+         - DO NOT write "Not available", "Unknown", or "N/A".
+         - If it's not in the text, do not mention it at all.
+
+      3. Structure the summary clearly but naturally:
+         - Who we are (Mission/Identity)
+         - What we do (Services/Products)
+         - Operational Details (Hours, Locations - ONLY if found)
+         - Contact (how to reach us)
+
       OUTPUT JSON (No markdown):
       {
         "companyName": "Exact Company Name",
         "industry": "Specific Niche",
-        "knowledgeBaseSummary": "Business Name: ... \\nMission: ... \\nServices: ... \\nHours: ... \\nContact: ...",
-        "openingGreeting": "Contextual opening." 
+        "knowledgeBaseSummary": "We are [Name]... \\nWe help clients with... \\nOur office is located at...",
+        "openingGreeting": "Welcome to [Company Name]! How can we help you today?" 
       }
     `;
 

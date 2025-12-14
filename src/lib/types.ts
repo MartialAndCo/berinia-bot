@@ -3,7 +3,7 @@ export interface ProjectData {
     URL: string;
     AgentID: string;
     CompanyName: string;
-    SystemPrompt: string;
+    KnowledgeBaseSummary: string;
 }
 
 export interface ScrapingMission {
@@ -13,4 +13,18 @@ export interface ScrapingMission {
     maxLeads: number;
     status: 'Active' | 'Inactive';
     lastRun?: string;
+}
+
+export interface Lead {
+    firstName?: string;
+    lastName?: string;
+    companyName: string;
+    website?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    linkedIn?: string;
+    source: string; // e.g. "Google Maps", "LinkedIn"
+    status: 'New' | 'Contacted' | 'Qualified' | 'Closed';
+    notes?: string;
 }

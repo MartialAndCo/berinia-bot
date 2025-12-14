@@ -1,0 +1,212 @@
+{
+    "name": "Berinia Lead Reception (Fixed)",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "webhook",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                0,
+                0
+            ],
+            "id": "webhook-trigger",
+            "name": "Apify Webhook"
+        },
+        {
+            "parameters": {
+                "modelId": {
+                    "__rl": true,
+                    "value": "models/gemini-1.5-pro",
+                    "mode": "list",
+                    "cachedResultName": "models/gemini-1.5-pro"
+                },
+                "messages": {
+                    "values": [
+                        {
+                            "content": "You are a Data Cleaning Expert for Berinia.\n\nINPUT: Raw JSON data from a Google Maps Scraper.\n\nYOUR TASK: Extract and Normalize fields.\n\nMANDATORY FIELDS:\n- business_name\n- phone (Format: International +XX...)\n- industry\n- location (CRITICAL: Extract the CITY and STATE/REGION. If full address is available, use that. Do NOT leave empty.)\n\nOPTIONAL:\n- first_name\n- last_name\n- email\n- website_url\n\nINPUT DATA:\n{{JSON.stringify($json.body)}}"
+                        }
+                    ]
+                },
+                "jsonOutput": true,
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.googleGemini",
+            "typeVersion": 1,
+            "position": [
+                220,
+                0
+            ],
+            "id": "ai-cleaner",
+            "name": "AI Data Cleaner",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "MaWvWq8hftbVq17g",
+                    "name": "Google Gemini(PaLM) Api account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "list",
+                "base": {
+                    "__rl": true,
+                    "value": "appYPB0Q8TKMAlASW",
+                    "mode": "list",
+                    "cachedResultName": "Deals"
+                },
+                "table": {
+                    "__rl": true,
+                    "value": "tbl8UZhDZb4AUd9uq",
+                    "mode": "list",
+                    "cachedResultName": "Prospects"
+                },
+                "filterByFormula": "={phone} = '{{ $json.phone }}'",
+                "maxRecords": 1
+            },
+            "type": "n8n-nodes-base.airtable",
+            "typeVersion": 2.1,
+            "position": [
+                440,
+                0
+            ],
+            "id": "check-duplicate",
+            "name": "Check Duplicate (Phone)",
+            "credentials": {
+                "airtableTokenApi": {
+                    "id": "xPWlqNHcfqoaWxA9",
+                    "name": "Airtable Personal Access Token account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 3
+                    },
+                    "conditions": [
+                        {
+                            "id": "cond-1",
+                            "leftValue": "={{ $items(\"Check Duplicate (Phone)\").length }}",
+                            "rightValue": 0,
+                            "operator": {
+                                "type": "number",
+                                "operation": "equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                660,
+                0
+            ],
+            "id": "if-new-lead",
+            "name": "If New Lead"
+        },
+        {
+            "parameters": {
+                "operation": "create",
+                "base": {
+                    "__rl": true,
+                    "value": "appYPB0Q8TKMAlASW",
+                    "mode": "list",
+                    "cachedResultName": "Deals"
+                },
+                "table": {
+                    "__rl": true,
+                    "value": "tbl8UZhDZb4AUd9uq",
+                    "mode": "list",
+                    "cachedResultName": "Prospects"
+                },
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "business_name": "={{ $node[\"AI Data Cleaner\"].json[\"business_name\"] }}",
+                        "phone": "={{ $node[\"AI Data Cleaner\"].json[\"phone\"] }}",
+                        "industry": "={{ $node[\"AI Data Cleaner\"].json[\"industry\"] }}",
+                        "first_name": "={{ $node[\"AI Data Cleaner\"].json[\"first_name\"] }}",
+                        "last_name": "={{ $node[\"AI Data Cleaner\"].json[\"last_name\"] }}",
+                        "email": "={{ $node[\"AI Data Cleaner\"].json[\"email\"] }}",
+                        "website_url": "={{ $node[\"AI Data Cleaner\"].json[\"website_url\"] }}",
+                        "location": "={{ $node[\"AI Data Cleaner\"].json[\"location\"] }}"
+                    }
+                },
+                "options": {
+                    "typecast": true
+                }
+            },
+            "type": "n8n-nodes-base.airtable",
+            "typeVersion": 2.1,
+            "position": [
+                880,
+                0
+            ],
+            "id": "save-airtable",
+            "name": "Save to Airtable",
+            "credentials": {
+                "airtableTokenApi": {
+                    "id": "xPWlqNHcfqoaWxA9",
+                    "name": "Airtable Personal Access Token account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Apify Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "AI Data Cleaner",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Data Cleaner": {
+            "main": [
+                [
+                    {
+                        "node": "Check Duplicate (Phone)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Duplicate (Phone)": {
+            "main": [
+                [
+                    {
+                        "node": "If New Lead",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "If New Lead": {
+            "main": [
+                [
+                    {
+                        "node": "Save to Airtable",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

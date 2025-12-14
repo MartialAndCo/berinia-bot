@@ -14,46 +14,35 @@ export async function analyzeSiteContent(siteText: string, url: string) {
             throw new Error("Missing API Key");
         }
 
-        // Using "gemini-2.5-flash" as explicitly requested by user
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const prompt = `
-      You are an expert AI Agent Architect. Create a "Digital Twin" for the company below.
+      You are an expert Business Analyst. Extract a structured "Knowledge Base Summary" for the company below from the scraped content.
 
       Input URL: ${url}
-      Scraped Content:
-      ${siteText}
+      Scraped Content (Snippet):
+      ${siteText.slice(0, 15000)} ...
 
       INSTRUCTIONS:
-      1. Analyze the HTML structure Deeply. Look for:
-         - "About Us" / "Mission"
-         - "Services" / "Products" (and their descriptions)
-         - "Process" (How it works steps)
-         - "Opening Hours" / "Availability"
-         - "Contact Info" (Phone, Email, Address)
-         - "Pricing" (if available)
-         - "FAQ" (Common questions)
+      1. Analyze the text to find:
+         - Business Name & Mission
+         - Services / Products (Key offerings)
+         - Opening Hours / Availability
+         - Contact Info (Phone, Email, Address, methods)
+         - Pricing (if found)
+         - FAQ / Common Questions
          
-      2. GENERATE A SPECIFIC PERSONA ("Digital Twin").
-         - Use "we" and "us".
-         - Be knowledgeable about the specific process and hours found.
+      2. GENERATE A SUMMARY (KnowledgeBaseSummary).
+         - This summary will be fed into a "Digital Twin" AI agent.
+         - It must be dense, factual, and organized.
+         - NO "System Prompt" instructions (like "You are..."). ONLY invalid data.
          
-      3. Create a System Prompt that includes:
-         - Role: "You are [Name], the specialist for [Company]."
-         - Knowledge Base: 
-            * Business Hours: [Insert Hours]
-            * Process: [Insert Steps]
-            * Key Services: [List]
-            * Contact: [Details]
-         - Mission: Specific goals (e.g. Schedule a meeting during open hours).
-         - Guidelines: "Be professional", "Use the specific information provided".
-
       OUTPUT JSON (No markdown):
       {
         "companyName": "Exact Company Name",
         "industry": "Specific Niche",
-        "systemPrompt": "Detailed system instructions (150 words).",
-        "openingGreeting": "Contextual opening."
+        "knowledgeBaseSummary": "Business Name: ... \\nMission: ... \\nServices: ... \\nHours: ... \\nContact: ...",
+        "openingGreeting": "Contextual opening." 
       }
     `;
 
@@ -66,28 +55,16 @@ export async function analyzeSiteContent(siteText: string, url: string) {
     } catch (error: any) {
         console.warn(`[Analyzer Warning] Gemini API failed: ${error.message}. Using Regex Fallback.`);
 
-        // GRACEFUL REGEX FALLBACK
         const titleMatch = siteText.match(/Title:\s*([^\n]+)/i);
         const descMatch = siteText.match(/Description:\s*([^\n]+)/i);
-
-        // Extract raw values or defaults
         let extractedName = titleMatch && titleMatch[1] ? titleMatch[1].trim() : "The Company";
         let extractedDesc = descMatch && descMatch[1] ? descMatch[1].trim() : "a leading provider.";
-
-        // Refine Name (remove slogans like " - Official Site")
         extractedName = extractedName.split(/[-|:]/)[0].trim();
 
         return {
             companyName: extractedName,
             industry: "General",
-            systemPrompt: `You are the AI Assistant for ${extractedName}. 
-            
-            About Us:
-            ${extractedDesc}
-            
-            Your Mission:
-            Assist visitors on our website (${url}). Answer questions based on the content context provided.
-            Always use 'we' and 'us' to represent the brand. Be professional, concise, and helpful.`,
+            knowledgeBaseSummary: `Business Name: ${extractedName}\nAbout: ${extractedDesc}\nSource: ${url}`,
             openingGreeting: `Welcome to ${extractedName}! How can we help you today?`
         };
     }

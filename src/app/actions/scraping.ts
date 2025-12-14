@@ -41,13 +41,18 @@ export async function triggerApifyScraping(data: {
             language: "en",
         };
 
-        // Add webhook only if configured
-        const options = process.env.N8N_INGESTION_WEBHOOK ? {
+        if (!process.env.N8N_INGESTION_WEBHOOK) {
+            console.warn("N8N_INGESTION_WEBHOOK is not configured! Scraping data will NOT be sent to n8n.");
+            // Per user request, this is mandatory:
+            throw new Error("Missing N8N_INGESTION_WEBHOOK in env. All scraping must be sent to n8n.");
+        }
+
+        const options = {
             webhooks: [{
                 eventTypes: ['ACTOR.RUN.SUCCEEDED'],
                 requestUrl: process.env.N8N_INGESTION_WEBHOOK,
             }]
-        } : undefined;
+        };
 
         // Run the actor
         // We use "compass/crawler-google-places" as a safe default for "Google Maps Scraper" 
@@ -74,4 +79,125 @@ export async function triggerApifyScraping(data: {
 export async function getScrapingConfig() {
     // Wrapper to be called from Client Components
     return await getAllScrapingMissions();
+}
+
+import { createScrapingMission, updateScrapingMissionStatus, deleteScrapingMission } from '@/lib/airtable';
+import { revalidatePath } from 'next/cache';
+
+export async function createMission(data: { keyword: string; location: string; maxLeads: number }) {
+    try {
+        await createScrapingMission(data);
+        revalidatePath('/scrap');
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
+
+export async function toggleMission(id: string, currentStatus: string) {
+    try {
+        const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+        await updateScrapingMissionStatus(id, newStatus);
+        revalidatePath('/scrap');
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
+
+export async function deleteMission(id: string) {
+    try {
+        await deleteScrapingMission(id);
+        revalidatePath('/scrap');
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
+
+export async function getApifyRuns() {
+    try {
+        // Fetch last 10 runs to avoid timeout/slowness
+        const runsList = await client.runs().list({
+            desc: true,
+            limit: 10
+        });
+
+        // Enrich runs
+        const enrichedRuns = await Promise.all(runsList.items.map(async (run: any) => {
+            let keyword = 'Unknown';
+            let location = '-';
+            let itemCount = 0;
+
+            try {
+                // 1. Fetch Input
+                // Use a tighter timeout or catch specific errors
+                if (run.defaultKeyValueStoreId) {
+                    const inputRecord = await client.keyValueStore(run.defaultKeyValueStoreId).getRecord('INPUT');
+                    const inputToCheck = inputRecord?.value as any;
+
+                    if (inputToCheck?.searchStringsArray?.length > 0) {
+                        const searchString = inputToCheck.searchStringsArray[0];
+                        if (typeof searchString === 'string') {
+                            if (searchString.includes(' in ')) {
+                                const parts = searchString.split(' in ');
+                                keyword = parts[0].trim();
+                                location = parts.slice(1).join(' in ').trim();
+                            } else {
+                                keyword = searchString.trim();
+                            }
+                        }
+                    } else if (inputToCheck?.queries) {
+                        // Handle generic Google Maps scraper input format if different
+                        keyword = inputToCheck.queries;
+                    }
+                }
+
+                // 2. Fetch Dataset Info
+                if (run.defaultDatasetId) {
+                    const dataset = await client.dataset(run.defaultDatasetId).get();
+                    itemCount = dataset?.itemCount || 0;
+                }
+
+            } catch (err) {
+                // Squelch individual enrichment errors to keep logs clean
+            }
+
+            // Extract maxLeads from input or default to 20
+            let maxLeads = 20;
+            try {
+                if (run.defaultKeyValueStoreId) {
+                    const inputRecord = await client.keyValueStore(run.defaultKeyValueStoreId).getRecord('INPUT');
+                    const val = inputRecord?.value as any;
+                    if (val?.maxCrawledPlacesPerSearch) {
+                        maxLeads = val.maxCrawledPlacesPerSearch;
+                    }
+                }
+            } catch (e) {
+                // Ignore input fetch error
+            }
+
+            return {
+                id: run.id,
+                status: run.status,
+                startedAt: run.startedAt,
+                finishedAt: run.finishedAt,
+                duration: run.finishedAt && run.startedAt
+                    ? Math.round((new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime()) / 1000)
+                    : 0,
+                defaultDatasetId: run.defaultDatasetId,
+                keyword,
+                location,
+                itemCount,
+                maxLeads
+            };
+        }));
+
+        // Log count only if very necessary, otherwise silence
+        return enrichedRuns;
+
+    } catch (error) {
+        console.error("Failed to fetch Apify runs:", error);
+        return [];
+    }
 }

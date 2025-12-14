@@ -13,11 +13,11 @@ const base = (apiKey && baseId)
 export async function saveProject(data: {
     url: string;
     agentId: string;
-    llmId: string;
+    llmId?: string; // Made optional as we might not have it for fixed agents, or it's fixed
     companyName: string;
-    systemPrompt: string;
+    knowledgeBaseSummary: string;
     demoUrl: string;
-    recordId?: string; // Optional Record ID from Airtable
+    recordId?: string;
 }) {
     if (!base) {
         console.warn("Airtable not configured, skipping save.");
@@ -25,26 +25,26 @@ export async function saveProject(data: {
     }
 
     try {
-        // Prepare fields for the NEW Preview record
         const fields: any = {
             URL: data.url,
             AgentID: data.agentId,
-            LLMID: data.llmId,
-            // CompanyName: data.companyName, // Field does not exist in Airtable
-            SystemPrompt: data.systemPrompt,
+            // LLMID: data.llmId, // Optional, might not be needed for fixed agents
+            // We map the generated Summary to the "SystemPrompt" column to reuse the field
+            SystemPrompt: data.knowledgeBaseSummary,
             DemoURL: data.demoUrl,
             Status: 'Active'
         };
 
-        // If a Prospect ID is provided, LINK it via the "Prospect" field
-        // This works because the user confirmed they changed "Prospect" to a Link Record type.
+        if (data.llmId) {
+            fields.LLMID = data.llmId;
+        }
+
         if (data.recordId) {
             fields.Prospect = [data.recordId];
         }
 
-        // Always CREATE a new record in the Previews table
         const records = await base(tableName).create([{ fields }]);
-        return records[0].id; // Return the new Preview ID
+        return records[0].id;
 
     } catch (error: any) {
         console.error("Airtable Save Error:", error);
@@ -80,7 +80,7 @@ export async function getProject(id: string): Promise<ProjectData | null> {
             URL: "https://example.com",
             AgentID: "oBeDLoLOeuAbiuaMFXRtDOLriTJ5tSxD", // Example Retell Agent ID
             CompanyName: "Example Corp",
-            SystemPrompt: "You are a helpful assistant.",
+            KnowledgeBaseSummary: "Summary of business info...",
         };
     }
 
@@ -90,7 +90,7 @@ export async function getProject(id: string): Promise<ProjectData | null> {
             URL: record.get('URL') as string,
             AgentID: record.get('AgentID') as string,
             CompanyName: record.get('CompanyName') as string,
-            SystemPrompt: record.get('SystemPrompt') as string,
+            KnowledgeBaseSummary: record.get('SystemPrompt') as string,
         };
     } catch (error) {
         console.error("Airtable Fetch Error:", error);
@@ -101,6 +101,43 @@ export async function getProject(id: string): Promise<ProjectData | null> {
 import { ScrapingMission } from './types';
 
 const configTableId = process.env.AIRTABLE_CONFIG_TABLE_ID || 'tblConfig'; // Use ID or Name if ID not set
+const leadsTableId = process.env.AIRTABLE_LEADS_TABLE_ID || 'tblLeads'; // Use ID or Name
+
+// ... (existing exports)
+
+import { Lead } from './types';
+
+export async function createLead(lead: Lead): Promise<string | null> {
+    if (!base) {
+        console.warn("Airtable not configured, skipping lead save.");
+        return "mock-" + Date.now();
+    }
+
+    try {
+        const records = await base(leadsTableId).create([
+            {
+                fields: {
+                    "First Name": lead.firstName,
+                    "Last Name": lead.lastName,
+                    "Company": lead.companyName,
+                    "Website": lead.website,
+                    "Email": lead.email,
+                    "Phone": lead.phone,
+                    "Address": lead.address,
+                    "LinkedIn": lead.linkedIn,
+                    "Source": lead.source,
+                    "Status": lead.status,
+                    "Notes": lead.notes
+                }
+            }
+        ]);
+        return records[0].id;
+    } catch (error) {
+        console.error("Error creating lead:", error);
+        throw error;
+    }
+}
+
 
 export async function getActiveScrapingMissions(): Promise<ScrapingMission[]> {
     if (!base) return [];
@@ -114,7 +151,7 @@ export async function getActiveScrapingMissions(): Promise<ScrapingMission[]> {
             id: record.id,
             keyword: record.get('Keyword') as string,
             location: record.get('Location') as string,
-            maxLeads: (record.get('MaxLeads') as number) || 20,
+            maxLeads: (record.get('Max Leads') as number) || 20,
             status: record.get('Status') as 'Active',
             lastRun: record.get('LastRun') as string,
         }));
@@ -136,12 +173,69 @@ export async function getAllScrapingMissions(): Promise<ScrapingMission[]> {
             id: record.id,
             keyword: record.get('Keyword') as string,
             location: record.get('Location') as string,
-            maxLeads: (record.get('MaxLeads') as number) || 20,
+            maxLeads: (record.get('Max Leads') as number) || 20,
             status: record.get('Status') as 'Active' | 'Inactive',
             lastRun: record.get('LastRun') as string,
         }));
     } catch (error) {
         console.error("Error fetching missions:", error);
         return [];
+    }
+}
+
+export async function createScrapingMission(data: { keyword: string; location: string; maxLeads: number }): Promise<ScrapingMission | null> {
+    if (!base) return null;
+
+    try {
+        const records = await base(configTableId).create([
+            {
+                fields: {
+                    "Keyword": data.keyword,
+                    "Location": data.location,
+                    "Status": "Active",
+                    "Max Leads": data.maxLeads // Column is "Number" in Airtable.
+
+                }
+            }
+        ]);
+        const record = records[0];
+        return {
+            id: record.id,
+            keyword: record.get('Keyword') as string,
+            location: record.get('Location') as string,
+            maxLeads: (record.get('Max Leads') as number) || 20,
+            status: record.get('Status') as 'Active' | 'Inactive',
+            lastRun: record.get('LastRun') as string,
+        };
+    } catch (error) {
+        console.error("Error creating mission:", error);
+        throw error;
+    }
+}
+
+export async function updateScrapingMissionStatus(id: string, status: 'Active' | 'Inactive'): Promise<void> {
+    if (!base) return;
+    try {
+        await base(configTableId).update([
+            {
+                id: id,
+                fields: {
+                    "Status": status
+                }
+            }
+        ]);
+    } catch (error) {
+        console.error("Error updating mission status:", error);
+        throw error;
+    }
+}
+
+export async function deleteScrapingMission(id: string): Promise<void> {
+    if (!base) return;
+    try {
+        await base(configTableId).destroy([id]);
+    } catch (error) {
+        console.error("Error deleting mission:", error);
+        throw error;
     }
 }

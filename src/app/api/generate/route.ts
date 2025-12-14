@@ -20,33 +20,29 @@ export async function POST(request: Request) {
         const siteText = await scrapeSite(url);
         console.log(`Scraped ${siteText.length} chars.`);
 
-        // 2. Analyze
+        // 2. Analyze (Generate KnowledgeBaseSummary)
         const analysis = await analyzeSiteContent(siteText, url);
         console.log(`Analysis complete for ${analysis.companyName}`);
 
-        // 3. Create Retell Agent
-        const retellData = await createRetellProject({
-            companyName: analysis.companyName,
-            systemPrompt: analysis.systemPrompt,
-            initialMessage: analysis.openingGreeting
-        });
-        console.log(`Retell Agent Created: ${retellData.agentId}`);
+        // 3. Get Fixed Agent IDs
+        const voiceAgentId = process.env.NEXT_PUBLIC_VOICE_AGENT_ID;
+
+        if (!voiceAgentId) {
+            console.warn("NEXT_PUBLIC_VOICE_AGENT_ID is missing in env!");
+        }
 
         // 4. Save/Update Airtable
         const projectId = await saveProject({
             url,
-            agentId: retellData.agentId,
-            llmId: retellData.llmId,
+            agentId: voiceAgentId || "MISSING_AGENT_ID",
             companyName: analysis.companyName,
-            systemPrompt: analysis.systemPrompt,
+            knowledgeBaseSummary: analysis.knowledgeBaseSummary,
             demoUrl: "", // Placeholder
-            recordId: recordId // Pass optional ID
+            recordId: recordId
         });
 
         // 5. Generate Link & Update Airtable
-
-        // 5. Generate Link & Update Airtable
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://demo.berinia.com';
         const previewUrl = `${baseUrl}/preview/${projectId}`;
 
         await updateProject(projectId, { demoUrl: previewUrl });
@@ -55,7 +51,7 @@ export async function POST(request: Request) {
             status: 'success',
             projectId,
             previewUrl,
-            agentId: retellData.agentId,
+            agentId: voiceAgentId,
             companyName: analysis.companyName
         }, {
             headers: {

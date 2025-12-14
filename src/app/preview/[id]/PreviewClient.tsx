@@ -142,12 +142,25 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                             // Move it to phone container
                             phoneScreenRef.current?.appendChild(node);
 
-                            // Force styles to contain it
-                            node.style.position = 'absolute';
-                            node.style.bottom = '20px';
-                            node.style.right = '20px';
-                            node.style.zIndex = '50';
-                            node.style.fontFamily = 'inherit';
+                            // FORCE styles to contain it using !important
+                            const setStyles = (el: HTMLElement) => {
+                                el.style.setProperty('position', 'absolute', 'important');
+                                el.style.setProperty('bottom', '20px', 'important');
+                                el.style.setProperty('right', '20px', 'important');
+                                el.style.setProperty('z-index', '50', 'important');
+                                el.style.setProperty('max-height', '90%', 'important'); // Prevent overflow
+                            };
+
+                            setStyles(node);
+
+                            // Fight back if the widget tries to reset styles
+                            const styleObserver = new MutationObserver(() => {
+                                if (node.style.position !== 'absolute') {
+                                    console.log("[Retell Debug] Widget tried to escape! Forcing back.");
+                                    setStyles(node);
+                                }
+                            });
+                            styleObserver.observe(node, { attributes: true, attributeFilter: ['style'] });
                         }
                     }
                 });
@@ -156,14 +169,17 @@ export function PreviewClient({ project }: { project: ProjectData }) {
 
         observer.observe(document.body, { childList: true, subtree: false });
 
-        // Also check if it's already there (in case we missed the event)
+        // Check existing
         const existing = document.querySelector('retell-widget') || document.getElementById('retell-widget-container');
         if (existing && phoneScreenRef.current && !phoneScreenRef.current.contains(existing)) {
             console.log("[Retell Debug] Moving existing widget to phone container");
             phoneScreenRef.current.appendChild(existing);
-            (existing as HTMLElement).style.position = 'absolute';
-            (existing as HTMLElement).style.bottom = '20px';
-            (existing as HTMLElement).style.right = '20px';
+            const el = existing as HTMLElement;
+            el.style.setProperty('position', 'absolute', 'important');
+            el.style.setProperty('bottom', '20px', 'important');
+            el.style.setProperty('right', '20px', 'important');
+            el.style.setProperty('z-index', '50', 'important');
+            el.style.setProperty('max-height', '90%', 'important');
         }
 
         return () => observer.disconnect();

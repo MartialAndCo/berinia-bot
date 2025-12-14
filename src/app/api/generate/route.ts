@@ -42,7 +42,21 @@ export async function POST(request: Request) {
         });
 
         // 5. Generate Link & Update Airtable
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://demo.berinia.com';
+        // 5. Generate Link & Update Airtable
+        // Dynamically determine base URL from request headers if possible, to match the current env (localhost vs prod)
+        const origin = request.headers.get('origin');
+        const host = request.headers.get('host');
+        let baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+        if (!baseUrl && origin) {
+            baseUrl = origin;
+        } else if (!baseUrl && host) {
+            const protocol = request.headers.get('x-forwarded-proto') || 'http';
+            baseUrl = `${protocol}://${host}`;
+        }
+
+        baseUrl = baseUrl || 'https://demo.berinia.com';
+
         const previewUrl = `${baseUrl}/preview/${projectId}`;
 
         await updateProject(projectId, { demoUrl: previewUrl });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChatWidget } from '@/components/ChatWidget';
 import { Mic, PhoneOff, Loader2, Menu, ShoppingBag, X, MessageCircle } from 'lucide-react';
 import { RetellWebClient } from 'retell-client-js-sdk';
@@ -18,6 +18,26 @@ export function PreviewClient({ project }: { project: ProjectData }) {
     const [isCallActive, setIsCallActive] = useState(false);
     const [isCalling, setIsCalling] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const [showCalendar, setShowCalendar] = useState(false);
+    const calendarRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting) {
+                    setShowCalendar(true);
+                    observer.disconnect();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (calendarRef.current) {
+            observer.observe(calendarRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, []);
 
     useEffect(() => {
         // Setup listeners
@@ -265,13 +285,23 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                 <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
                     <h2 className="text-3xl font-bold mb-4 text-white font-heading">Ready to implement this?</h2>
                     <p className="text-slate-400 mb-12 font-sans">Book a time with us to discuss your custom AI integration.</p>
-                    <div className="w-full h-[650px] rounded-2xl border border-white/10 shadow-2xl overflow-hidden bg-white/5 backdrop-blur-sm flex items-center justify-center">
-                        <iframe
-                            src="https://cal.com/berinia-ukf1ty/berinia-demo"
-                            className="w-full h-full"
-                            title="Book a meeting"
-                            loading="lazy"
-                        ></iframe>
+                    <div
+                        ref={calendarRef}
+                        className="w-full h-[650px] rounded-2xl border border-white/10 shadow-2xl overflow-hidden bg-white/5 backdrop-blur-sm flex items-center justify-center"
+                    >
+                        {showCalendar ? (
+                            <iframe
+                                src="https://cal.com/berinia/demo?layout=month_view&timeFormat=12"
+                                className="w-full h-full"
+                                title="Book a meeting"
+                                loading="lazy"
+                            ></iframe>
+                        ) : (
+                            <div className="flex flex-col items-center gap-4 text-slate-500">
+                                <Loader2 className="w-8 h-8 animate-spin" />
+                                <span>Loading Calendar...</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </section>

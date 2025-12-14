@@ -3,7 +3,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, ArrowRight, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { Loader2, ArrowRight, Sparkles, Lock } from 'lucide-react';
 
 export default function Home() {
     const [url, setUrl] = useState('');
@@ -38,6 +39,13 @@ export default function Home() {
 
     return (
         <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+            {/* Admin Access Link */}
+            <div className="absolute top-4 right-4 z-50">
+                <Link href="/admin" className="text-neutral-700 hover:text-neutral-500 transition-colors p-2" title="Admin Access">
+                    <Lock size={16} />
+                </Link>
+            </div>
+
             {/* Background Gradients */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
                 <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-purple-900/30 rounded-full blur-[100px]" />
@@ -60,6 +68,8 @@ export default function Home() {
 
                 <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4 max-w-lg mx-auto w-full">
                     <input
+                        id="url"
+                        name="url"
                         type="url"
                         placeholder="https://your-company.com"
                         value={url}

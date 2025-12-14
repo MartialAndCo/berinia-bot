@@ -4,6 +4,7 @@ export interface ProjectData {
     AgentID: string;
     CompanyName: string;
     KnowledgeBaseSummary: string;
+    Status?: string; // e.g. 'Active', 'Inactive'
 }
 
 export interface ScrapingMission {

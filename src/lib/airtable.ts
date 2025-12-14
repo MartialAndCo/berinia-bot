@@ -29,8 +29,7 @@ export async function saveProject(data: {
             URL: data.url,
             AgentID: data.agentId,
             // LLMID: data.llmId, // Optional, might not be needed for fixed agents
-            // We map the generated Summary to the "SystemPrompt" column to reuse the field
-            SystemPrompt: data.knowledgeBaseSummary,
+            KnowledgeBaseSummary: data.knowledgeBaseSummary,
             DemoURL: data.demoUrl,
             Status: 'Active'
         };
@@ -52,7 +51,7 @@ export async function saveProject(data: {
     }
 }
 
-export async function updateProject(id: string, data: { demoUrl?: string }) {
+export async function updateProject(id: string, data: { demoUrl?: string, status?: string }) {
     if (!base) return;
 
     try {
@@ -60,7 +59,8 @@ export async function updateProject(id: string, data: { demoUrl?: string }) {
             {
                 id: id,
                 fields: {
-                    ...(data.demoUrl && { DemoURL: data.demoUrl })
+                    ...(data.demoUrl && { DemoURL: data.demoUrl }),
+                    ...(data.status && { Status: data.status })
                 }
             }
         ]);
@@ -90,7 +90,8 @@ export async function getProject(id: string): Promise<ProjectData | null> {
             URL: record.get('URL') as string,
             AgentID: record.get('AgentID') as string,
             CompanyName: record.get('CompanyName') as string,
-            KnowledgeBaseSummary: record.get('SystemPrompt') as string,
+            KnowledgeBaseSummary: record.get('KnowledgeBaseSummary') as string,
+            Status: record.get('Status') as string,
         };
     } catch (error) {
         console.error("Airtable Fetch Error:", error);
@@ -237,5 +238,38 @@ export async function deleteScrapingMission(id: string): Promise<void> {
     } catch (error) {
         console.error("Error deleting mission:", error);
         throw error;
+    }
+}
+
+export async function getAllProjects(): Promise<any[]> {
+    if (!base) return [];
+
+    try {
+        const records = await base(tableName).select().all();
+
+        // Sort by creation time (descending) in JS since API sort failed
+        const sortedRecords = [...records].sort((a: any, b: any) => {
+            return new Date(b._rawJson.createdTime).getTime() - new Date(a._rawJson.createdTime).getTime();
+        });
+
+        return sortedRecords.map(record => ({
+            id: record.id,
+            url: record.get('URL') as string,
+            companyName: record.get('CompanyName') as string,
+            agentId: record.get('AgentID') as string,
+            summary: record.get('KnowledgeBaseSummary') as string,
+            demoUrl: record.get('DemoURL') as string,
+            status: record.get('Status') as string,
+            createdTime: record._rawJson.createdTime
+        }));
+    } catch (error) {
+        console.error("Error fetching all projects:", error);
+        // Fallback for dev/mock
+        if (!process.env.AIRTABLE_API_KEY) {
+            return [
+                { id: 'mock1', url: 'https://example.com', companyName: 'Example Corp', agentId: 'fixed_agent_1', summary: 'Mock Summary', demoUrl: '/preview/mock1', createdTime: new Date().toISOString() }
+            ];
+        }
+        return [];
     }
 }

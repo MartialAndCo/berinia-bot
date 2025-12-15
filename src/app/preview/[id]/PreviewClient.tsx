@@ -1,16 +1,108 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Phone, Mic, PhoneOff } from 'lucide-react';
 import { ProjectData } from '@/lib/types';
 import { CustomTextAgent } from '@/components/CustomTextAgent';
+import { RetellWebClient } from 'retell-client-js-sdk';
+
+const retellWebClient = new RetellWebClient();
+
+
 
 export function PreviewClient({ project, prospectId }: { project: ProjectData; prospectId: string }) {
     const [showCalendar, setShowCalendar] = useState(false);
     const calendarRef = useRef<HTMLDivElement>(null);
 
+    // Use Ref for stable client instance across renders
+    const retellWebClientRef = useRef<RetellWebClient | null>(null); // Keeping this for safety but restoring global mainly
+
     // Retell Agent ID logic
     const agentId = project.AgentID || process.env.NEXT_PUBLIC_VOICE_AGENT_ID;
+
+    // Voice Call State
+    const [isCalling, setIsCalling] = useState(false);
+    const [isConnecting, setIsConnecting] = useState(false);
+
+    // Initialize Retell Client Listeners
+    useEffect(() => {
+        // We use the global instance now as requested "before error"
+        retellWebClient.on('call_started', () => {
+            console.log('Call started');
+            setIsCalling(true);
+        });
+
+        retellWebClient.on('call_ended', () => {
+            console.log('Call ended event received');
+            // Force update in next tick to ensure UI refresh
+            setTimeout(() => {
+                setIsCalling(() => false);
+                setIsConnecting(() => false);
+                console.log('UI state forced to disconnected');
+            }, 0);
+        });
+
+        retellWebClient.on('error', (error) => {
+            console.error('Retell Client Error:', error);
+            setIsCalling(false);
+        });
+
+        // Cleanup listeners
+        return () => {
+            retellWebClient.removeAllListeners();
+        };
+    }, []);
+
+    const handleVoiceCall = async () => {
+        // Use Global Instance
+        if (isCalling) {
+            retellWebClient.stopCall();
+            setIsCalling(false); // Force state reset immediately
+            return;
+        }
+
+        setIsConnecting(true);
+
+        try {
+            // 1. Get Access Token
+            const res = await fetch('/api/register-call', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    agentId: agentId,
+                    dynamicVariables: {
+                        business_name: project.CompanyName || "Berinia",
+                        prospectId: prospectId
+                    }
+                })
+            });
+
+            const data = await res.json();
+            if (!data.access_token) throw new Error('No access token');
+
+            // 2. Start Call
+            console.log('Initializing Retell Web Client with token...');
+            await retellWebClient.startCall({
+                accessToken: data.access_token
+            });
+            console.log('startCall() promise resolved - forcing UI update');
+
+            // Force UI update securely in case event listener missed it
+            setIsConnecting(false);
+            setIsCalling(true);
+
+        } catch (err: any) {
+            console.error('Failed to start call:', err);
+
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                alert('Microphone access denied. Please allow microphone access to use this feature.');
+            } else {
+                alert('Could not start call. Please check your internet or try again.');
+            }
+
+            setIsConnecting(false);
+        }
+    };
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -79,9 +171,33 @@ export function PreviewClient({ project, prospectId }: { project: ProjectData; p
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                        <a href="#demo" className="px-8 py-4 bg-primary text-white rounded-full font-semibold shadow-lg hover:bg-primary/90 transition hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 font-heading">
-                            Try the Demo
-                        </a>
+                        <button
+                            onClick={handleVoiceCall}
+                            disabled={isConnecting}
+                            className={`px-8 py-4 rounded-full font-semibold shadow-lg transition hover:shadow-xl font-heading flex items-center gap-3 w-fit disabled:opacity-80 disabled:cursor-not-allowed ${isConnecting
+                                ? 'bg-neutral-600 text-white cursor-wait' // Distinct Grey for Loading
+                                : isCalling
+                                    ? 'bg-red-500 hover:bg-red-600 text-white'
+                                    : 'bg-primary hover:bg-primary/90 text-white animate-vibrate-ring'
+                                }`}
+                        >
+                            {isConnecting ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    Connecting...
+                                </>
+                            ) : isCalling ? (
+                                <>
+                                    <PhoneOff className="w-5 h-5 fill-current" />
+                                    End Call
+                                </>
+                            ) : (
+                                <>
+                                    <Phone className="w-5 h-5 fill-current" />
+                                    Try your Voice Agent
+                                </>
+                            )}
+                        </button>
                         <a href="#calendar" className="px-8 py-4 bg-white/5 text-white border border-white/10 rounded-full font-semibold hover:bg-white/10 transition font-heading">
                             Book a Call
                         </a>

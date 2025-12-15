@@ -5,6 +5,7 @@ export interface ProjectData {
     CompanyName: string;
     KnowledgeBaseSummary: string;
     Status?: string; // e.g. 'Active', 'Inactive'
+    AirtableProspectId?: string; // The ID of the linked Prospect record
 }
 
 export interface ScrapingMission {

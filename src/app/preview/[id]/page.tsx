@@ -48,5 +48,6 @@ export default async function PreviewPage({ params }: PageProps) {
         );
     }
 
-    return <PreviewClient project={project} />;
+    const targetId = project.AirtableProspectId || id;
+    return <PreviewClient project={project} prospectId={targetId} />;
 }

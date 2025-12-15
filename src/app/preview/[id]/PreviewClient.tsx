@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { ProjectData } from '@/lib/types';
-import { RetellOverlay } from '@/components/RetellOverlay';
+import { CustomTextAgent } from '@/components/CustomTextAgent';
 
-export function PreviewClient({ project }: { project: ProjectData }) {
+export function PreviewClient({ project, prospectId }: { project: ProjectData; prospectId: string }) {
     const [showCalendar, setShowCalendar] = useState(false);
     const calendarRef = useRef<HTMLDivElement>(null);
 
@@ -127,8 +127,12 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                             {/* NO WIDGETS, NO BUTTONS */}
 
 
-                            {/* Retell Widget Overlay */}
-                            <RetellOverlay agentId={agentId || ''} />
+                            {/* Custom Text Chat Agent */}
+                            <CustomTextAgent
+                                agentId={agentId || ''}
+                                companyName={project.CompanyName || 'BerinIA'}
+                                prospectId={prospectId}
+                            />
 
                         </div>
                     </div>

@@ -91,6 +91,7 @@ export async function getProject(id: string): Promise<ProjectData | null> {
             CompanyName: record.get('CompanyName') as string,
             KnowledgeBaseSummary: record.get('KnowledgeBaseSummary') as string,
             Status: record.get('Status') as string,
+            AirtableProspectId: (record.get('Prospect') as string[])?.[0] || undefined
         };
     } catch (error) {
         console.error("Airtable Fetch Error:", error);

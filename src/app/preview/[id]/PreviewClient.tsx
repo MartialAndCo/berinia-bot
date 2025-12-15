@@ -142,36 +142,35 @@ export function PreviewClient({ project }: { project: ProjectData }) {
 
                             console.log("[Retell Debug] Captured Widget Node:", node);
 
-                            // Move it to phone container
-                            phoneScreenRef.current?.appendChild(node);
+                            // Move it to OUR CUSTOM TARGET (Inside the Action Bar)
+                            const targetContainer = document.getElementById('retell-container-target');
 
-                            // FORCE styles to contain it using !important
-                            // FORCE styles to contain it using !important
-                            const setStyles = (el: HTMLElement) => {
-                                el.style.setProperty('position', 'absolute', 'important');
-                                el.style.setProperty('bottom', '80px', 'important'); // Move up above FAB/nav
-                                el.style.setProperty('left', '50%', 'important'); // Center horizontally
-                                el.style.setProperty('right', 'auto', 'important'); // Reset right
-                                el.style.setProperty('transform', 'translateX(-50%)', 'important'); // Perfect center
-                                el.style.setProperty('width', '90%', 'important'); // Consistent width
-                                el.style.setProperty('max-width', '320px', 'important'); // Max width
-                                el.style.setProperty('z-index', '50', 'important');
-                                el.style.setProperty('max-height', '70%', 'important'); // Shorter height
-                                el.style.setProperty('border-radius', '12px', 'important'); // Nice corners
-                                el.style.setProperty('overflow', 'hidden', 'important');
-                                el.style.setProperty('box-shadow', '0 4px 12px rgba(0,0,0,0.15)', 'important');
-                            };
+                            if (targetContainer) {
+                                console.log("[Retell Debug] MOVING WHOLE WIDGET INTO ACTION BAR TARGET");
+                                targetContainer.appendChild(node);
 
-                            setStyles(node);
+                                // FORCE styles to be INVISIBLE and FILL the target
+                                const setStyles = (el: HTMLElement) => {
+                                    el.style.setProperty('position', 'absolute', 'important');
+                                    el.style.setProperty('top', '0', 'important');
+                                    el.style.setProperty('left', '0', 'important');
+                                    el.style.setProperty('width', '100%', 'important');
+                                    el.style.setProperty('height', '100%', 'important');
+                                    el.style.setProperty('opacity', '0', 'important'); // INVISIBLE CLICK TARGET
+                                    el.style.setProperty('z-index', '50', 'important');
+                                    el.style.setProperty('pointer-events', 'auto', 'important'); // MUST BE CLICKABLE
+                                };
+                                setStyles(node);
 
-                            // Fight back if the widget tries to reset styles
-                            const styleObserver = new MutationObserver(() => {
-                                if (node.style.position !== 'absolute') {
-                                    console.log("[Retell Debug] Widget tried to escape! Forcing back.");
-                                    setStyles(node);
-                                }
-                            });
-                            styleObserver.observe(node, { attributes: true, attributeFilter: ['style'] });
+                                // Watchdog
+                                const styleObserver = new MutationObserver(() => {
+                                    // Just ensure position/opacity stay correct
+                                    if (node.style.opacity !== '0' || node.style.position !== 'absolute') {
+                                        setStyles(node);
+                                    }
+                                });
+                                styleObserver.observe(node, { attributes: true, attributeFilter: ['style'] });
+                            }
                         } else {
                             // Log other nodes to help identify the widget if we missed it
                             if (node.tagName !== 'SCRIPT' && node.tagName !== 'LINK') {
@@ -328,13 +327,47 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                                 {/* Overlay if needed, but for now kept clean */}
                             </div>
 
-                            {/* --- RETELL OFFICIAL WIDGET INJECTION --- */}
-                            {/* 
-                                HYBRID APPROACH: 
-                                1. We inject the official script for Text Chat using useEffect to ensure execution.
-                                2. We keep the Voice SDK for the custom "Voice Call" button.
-                            */}
+                            {/* --- RETELL OFFICIAL WIDGET INJECTION (Hidden Overlay) --- */}
                             {/* Script injected via useEffect below */}
+
+                            {/* --- UNIFIED ACTION BAR --- */}
+                            {/* Container for both Voice and Chat controls - "Glued" and "Clean" */}
+                            <div
+                                id="action-bar"
+                                className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 bg-black/90 backdrop-blur-md text-white rounded-full p-1.5 flex items-center shadow-lg border border-white/10 transition-all hover:scale-105"
+                            >
+                                {/* 1. Voice Button */}
+                                <button
+                                    onClick={toggleVoice}
+                                    disabled={isCalling}
+                                    className={`
+                                        flex items-center gap-2 px-4 py-2 rounded-full transition-all
+                                        ${isCalling ? 'bg-white/10 cursor-wait' : 'hover:bg-white/20 active:bg-white/30'}
+                                    `}
+                                >
+                                    {isCalling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4 text-primary" />}
+                                    <span className="text-sm font-medium">Appel</span>
+                                </button>
+
+                                {/* Divider */}
+                                <div className="w-[1px] h-6 bg-white/20 mx-1"></div>
+
+                                {/* 2. Chat Button (Visual Only - Widget Overlays This) */}
+                                <div className="relative group">
+                                    <div className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/20 transition-all cursor-pointer">
+                                        <MessageCircle className="w-4 h-4 text-blue-400" />
+                                        <span className="text-sm font-medium">Chat</span>
+                                    </div>
+
+                                    {/* The Widget Container - Target for MutationObserver */}
+                                    {/* The script will move the widget HERE and we make it transparent */}
+                                    <div
+                                        id="retell-container-target"
+                                        className="absolute inset-0 w-full h-full opacity-0 overflow-hidden"
+                                        style={{ pointerEvents: 'auto' }} // Ensure clicks pass to children (the widget)
+                                    />
+                                </div>
+                            </div>
 
 
                             {/* --- VOICE OVERLAY (When Active) --- */}
@@ -350,24 +383,6 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                                         className="px-8 py-4 rounded-full bg-red-500 hover:bg-red-600 text-white font-medium flex items-center gap-2 transition-colors shadow-lg hover:shadow-red-500/25"
                                     >
                                         <PhoneOff className="w-5 h-5" /> End Call
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* --- FAB TRIGGERS --- */}
-                            {/* Only show when not in call. Only show Voice FAB. Chat FAB is now handled by Retell Widget. */}
-                            {!isCallActive && (
-                                <div className="absolute bottom-5 right-20 z-40 flex flex-col gap-4 items-end pointer-events-none">
-                                    {/* Voice FAB (Moved slightly left to avoid blocking Widget) */}
-                                    <button
-                                        onClick={() => {
-                                            toggleVoice();
-                                        }}
-                                        disabled={isCalling}
-                                        className="pointer-events-auto w-12 h-12 rounded-full bg-black/80 backdrop-blur-md text-white flex items-center justify-center shadow-lg hover:scale-110 transition-all border border-white/10 group hover:bg-black"
-                                        title="Test Voice Agent"
-                                    >
-                                        {isCalling ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mic className="w-5 h-5 group-hover:text-primary transition-colors" />}
                                     </button>
                                 </div>
                             )}

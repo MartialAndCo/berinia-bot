@@ -117,7 +117,9 @@ export function RetellOverlay({ agentId }: RetellOverlayProps) {
                 button.click();
 
                 // Also, once opened, we might need to ensure the chat window is visible
-                widget.style.opacity = '1';
+                if (widget instanceof HTMLElement) {
+                    widget.style.opacity = '1';
+                }
                 // But if we make it visible, the default button appears?
                 // Maybe we only hide the button?
                 // Hard to target just the button in shadow dom via CSS constant.
@@ -126,7 +128,9 @@ export function RetellOverlay({ agentId }: RetellOverlayProps) {
         }
 
         // 2. Click the widget host itself?
-        widget.click();
+        if (widget instanceof HTMLElement) {
+            widget.click();
+        }
     };
 
     return (

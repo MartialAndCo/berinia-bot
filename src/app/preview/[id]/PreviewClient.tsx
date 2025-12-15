@@ -101,7 +101,7 @@ export function PreviewClient({ project }: { project: ProjectData }) {
         // Attributes
         script.setAttribute('data-public-key', publicKey);
         script.setAttribute('data-agent-id', envChatAgentId);
-        script.setAttribute('data-title', `Chat with ${project.CompanyName}`);
+        script.setAttribute('data-title', `Chat with ${project.CompanyName || "Us"}`);
         script.setAttribute('data-bot-name', "AI Assistant");
         script.setAttribute('data-show-ai-popup', "true");
         script.setAttribute('data-auto-open', "false"); // Start closed
@@ -115,7 +115,7 @@ export function PreviewClient({ project }: { project: ProjectData }) {
 
         // CLEANUP REMOVED: To prevent race condition where script is removed before it executes
         // CLEANUP REMOVED: To prevent race condition where script is removed before it executes
-    }, [envChatAgentId, project.CompanyName]);
+    }, [envChatAgentId, project]);
 
     // --- WIDGET CONTAINMENT LOGIC ---
     // The user wants the widget INSIDE the phone iframe area. 
@@ -146,12 +146,20 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                             phoneScreenRef.current?.appendChild(node);
 
                             // FORCE styles to contain it using !important
+                            // FORCE styles to contain it using !important
                             const setStyles = (el: HTMLElement) => {
                                 el.style.setProperty('position', 'absolute', 'important');
-                                el.style.setProperty('bottom', '20px', 'important');
-                                el.style.setProperty('right', '20px', 'important');
+                                el.style.setProperty('bottom', '80px', 'important'); // Move up above FAB/nav
+                                el.style.setProperty('left', '50%', 'important'); // Center horizontally
+                                el.style.setProperty('right', 'auto', 'important'); // Reset right
+                                el.style.setProperty('transform', 'translateX(-50%)', 'important'); // Perfect center
+                                el.style.setProperty('width', '90%', 'important'); // Consistent width
+                                el.style.setProperty('max-width', '320px', 'important'); // Max width
                                 el.style.setProperty('z-index', '50', 'important');
-                                el.style.setProperty('max-height', '90%', 'important'); // Prevent overflow
+                                el.style.setProperty('max-height', '70%', 'important'); // Shorter height
+                                el.style.setProperty('border-radius', '12px', 'important'); // Nice corners
+                                el.style.setProperty('overflow', 'hidden', 'important');
+                                el.style.setProperty('box-shadow', '0 4px 12px rgba(0,0,0,0.15)', 'important');
                             };
 
                             setStyles(node);
@@ -295,7 +303,7 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                         <div
                             ref={phoneScreenRef}
                             style={{ transform: 'translateZ(0)' }} // TRAP FIXED ELEMENTS: Makes position:fixed relative to this container
-                            className="rounded-[2rem] overflow-hidden w-full h-full bg-white relative flex flex-col"
+                            className="rounded-[1.7rem] overflow-hidden w-full h-full bg-white relative flex flex-col" // Reduced radius from 2rem to 1.7rem to show corners
                         >
 
                             {/* Status Bar */}
@@ -311,7 +319,8 @@ export function PreviewClient({ project }: { project: ProjectData }) {
                             <div className="flex-1 bg-white relative overflow-hidden" onClick={() => isChatOpen && setIsChatOpen(false)}>
                                 <iframe
                                     src={project.URL?.match(/^https?:\/\//) ? project.URL : `https://${project.URL}`}
-                                    className="w-full h-full border-none bg-white"
+                                    className="h-full border-none bg-white"
+                                    style={{ width: 'calc(100% + 20px)' }} // Hack: Push scrollbar off-screen (Parent has overflow-hidden)
                                     title="Client Website Preview"
                                     sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
                                     loading="lazy"

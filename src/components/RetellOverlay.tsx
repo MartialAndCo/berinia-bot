@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { MessageSquare } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 interface RetellOverlayProps {
     agentId: string;
@@ -30,6 +29,7 @@ export function RetellOverlay({ agentId }: RetellOverlayProps) {
         script.type = 'module';
         script.setAttribute('data-public-key', publicKey);
         script.setAttribute('data-agent-id', agentId);
+        // Ensure auto-open is false so it starts closed
         script.setAttribute('data-auto-open', 'false');
 
         // We append to document.head so it initializes normally
@@ -43,38 +43,17 @@ export function RetellOverlay({ agentId }: RetellOverlayProps) {
         };
     }, [agentId]);
 
-    // Move the widget into container OR Proxy Click?
-    // User reported "Unclickable" when moved.
-    // Strategy: 
-    // 1. Move the widget into the container so it's confined to the phone.
-    // 2. Render a TRANSPARENT OVERLAY button on top of it to capture clicks?
-    //    No, if the widget is unclickable, maybe it's occlusion.
-    // 3. Let's try to MOVE it again, but this time ensure NO pointer-events: none on container.
-    //    Wait, I already did that.
-
-    // Fallback Strategy: Proxy Click.
-    // We render a fake button. We hide the real widget (opacity 0). 
-    // When fake button clicked -> we click the real widget.
-    // AND: We effectively force the real widget to be inside our container so the chat opens inside.
-
+    // Strategy: Move the Official Widget into the Container
     useEffect(() => {
         const observer = new MutationObserver((mutations) => {
             for (const mutation of mutations) {
                 for (const node of Array.from(mutation.addedNodes)) {
                     if (node instanceof HTMLElement) {
-                        if (node.tagName?.toLowerCase().includes('retell') ||
-                            node.shadowRoot) {
+                        // Look for the Retell Widget custom element
+                        if (node.tagName?.toLowerCase() === 'retell-widget') {
                             if (containerRef.current && !containerRef.current.contains(node)) {
-                                // Move it
+                                console.log('[RetellOverlay] Moving widget to container');
                                 containerRef.current.appendChild(node);
-
-                                // Force styles on the moved node to ensure it fills or sits right
-                                node.style.position = 'absolute';
-                                node.style.bottom = '20px';
-                                node.style.right = '20px';
-                                node.style.zIndex = '50'; // Below our proxy button?
-                                node.style.opacity = '0'; // Hide it visually, we use our button
-                                node.style.pointerEvents = 'auto'; // Ensure it's interactive for our programmatic click?
                             }
                         }
                     }
@@ -83,55 +62,16 @@ export function RetellOverlay({ agentId }: RetellOverlayProps) {
         });
 
         observer.observe(document.body, { childList: true, subtree: false });
+
+        // Initial check in case it's already there
+        const alreadyThere = document.querySelector('retell-widget');
+        if (alreadyThere && containerRef.current && !containerRef.current.contains(alreadyThere)) {
+            console.log('[RetellOverlay] Moving existing widget to container');
+            containerRef.current.appendChild(alreadyThere);
+        }
+
         return () => observer.disconnect();
     }, []);
-
-    const handleProxyClick = () => {
-        // Find the widget structure
-        // Usually <retell-widget> -> shadowRoot -> button
-        let widget = containerRef.current?.querySelector('retell-widget');
-
-        if (!widget) {
-            console.warn('Retell widget not found in container, searching globally...');
-            widget = document.querySelector('retell-widget');
-        }
-
-        if (!widget) {
-            console.error('Retell widget not found anywhere!');
-            return;
-        }
-
-        console.log('Proxy click triggered. Widget:', widget);
-
-        // Try all the ways to open it
-        // 1. Shadow DOM button click
-        if (widget.shadowRoot) {
-            // Try to find the trigger button
-            // Common selectors: button, .trigger, [role="button"]
-            const button = widget.shadowRoot.querySelector('button') ||
-                widget.shadowRoot.querySelector('[role="button"]') ||
-                widget.shadowRoot.querySelector('.retell-floating-button'); // Guess
-
-            if (button instanceof HTMLElement) {
-                console.log('Found shadow button, clicking:', button);
-                button.click();
-
-                // Also, once opened, we might need to ensure the chat window is visible
-                if (widget instanceof HTMLElement) {
-                    widget.style.opacity = '1';
-                }
-                // But if we make it visible, the default button appears?
-                // Maybe we only hide the button?
-                // Hard to target just the button in shadow dom via CSS constant.
-                return;
-            }
-        }
-
-        // 2. Click the widget host itself?
-        if (widget instanceof HTMLElement) {
-            widget.click();
-        }
-    };
 
     return (
         <div
@@ -139,29 +79,20 @@ export function RetellOverlay({ agentId }: RetellOverlayProps) {
             className="absolute inset-0 z-50 overflow-hidden"
             style={{
                 transform: 'translateZ(0)',
-                pointerEvents: 'none'
+                pointerEvents: 'none' // Default: Click-through to iframe
             }}
         >
-            {/* Our Custom Proxy Button */}
-            <button
-                onClick={handleProxyClick}
-                className="absolute bottom-5 right-5 w-14 h-14 bg-black rounded-full flex items-center justify-center text-white shadow-xl hover:scale-105 transition-transform active:scale-95 z-[100] cursor-pointer pointer-events-auto"
-                style={{ pointerEvents: 'auto' }}
-            >
-                <MessageSquare size={24} />
-            </button>
+            {/* The official widget will be moved here. */}
 
-            {/* Global style to force widget params if needed */}
             <style jsx global>{`
+                /* Force pointer events on the widget when it arrives */
                 retell-widget {
+                    pointer-events: auto !important; /* ENABLE CLICKS */
                     position: absolute !important;
                     bottom: 20px !important;
                     right: 20px !important;
-                    z-index: 40 !important; /* Below proxy button */
-                    opacity: 0; /* Hidden initially */
+                    z-index: 9999 !important;
                 }
-                
-                /* When chat is open, maybe class changes? or we just toggle opacity in JS */
             `}</style>
         </div>
     );

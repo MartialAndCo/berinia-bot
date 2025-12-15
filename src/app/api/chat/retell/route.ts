@@ -23,7 +23,7 @@ export async function POST(request: Request) {
             if (prospectId) {
                 try {
                     console.log('[Retell Chat] Calling inbound webhook for prospect:', prospectId);
-                    const webhookRes = await fetch('http://56.228.15.237:5678/webhook/text-inbound', {
+                    const webhookRes = await fetch('https://n8n.berinia.com/webhook/text-inbound', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ prospectId })

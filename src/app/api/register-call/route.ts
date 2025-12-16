@@ -23,7 +23,7 @@ export async function POST(request: Request) {
         if (prospectId) {
             try {
                 console.log('[Register Call] Calling inbound webhook for prospect:', prospectId);
-                const webhookRes = await fetch('https://n8n.berinia.com/webhook/inbound-call', {
+                const webhookRes = await fetch('https://n8n.berinia.com/webhook/inbound-web', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

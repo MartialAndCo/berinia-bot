@@ -31,18 +31,20 @@ export async function POST(request: Request) {
 
                     if (webhookRes.ok) {
                         const rawData = await webhookRes.json();
-                        // 1. Handle Array format: [{ fields: { ... } }]
-                        if (Array.isArray(rawData) && rawData.length > 0 && rawData[0].fields) {
-                            dynamicVariables = rawData[0].fields;
+
+                        // User instruction: The variable injection logic must match the Voice Agent
+                        let webhookVariables = rawData;
+
+                        // Logic to unwrap if the webhook returns { dynamic_variables: { ... } }
+                        if (webhookVariables.dynamic_variables && typeof webhookVariables.dynamic_variables === 'object') {
+                            console.log('[Retell Chat] Unwrapping nested dynamic_variables from webhook response');
+                            webhookVariables = { ...webhookVariables, ...webhookVariables.dynamic_variables };
+                            delete webhookVariables.dynamic_variables;
                         }
-                        // 2. Handle Single Object format: { fields: { ... } }
-                        else if (!Array.isArray(rawData) && rawData.fields) {
-                            dynamicVariables = rawData.fields;
-                        }
-                        // 3. Fallback: Use raw object
-                        else if (typeof rawData === 'object') {
-                            dynamicVariables = rawData;
-                        }
+
+                        console.log('[Retell Chat] Webhook data received (Keys):', Object.keys(webhookVariables));
+
+                        dynamicVariables = webhookVariables;
 
                     } else {
                         console.warn('[Retell Chat] Webhook failed with status:', webhookRes.status);

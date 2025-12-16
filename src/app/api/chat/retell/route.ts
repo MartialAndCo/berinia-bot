@@ -35,7 +35,14 @@ export async function POST(request: Request) {
                         // User instruction: The variable injection logic must match the Voice Agent
                         let webhookVariables = rawData;
 
-                        // Logic to unwrap if the webhook returns { dynamic_variables: { ... } }
+                        // 1. Handle Airtable-style "fields" wrapper
+                        if (webhookVariables.fields && typeof webhookVariables.fields === 'object') {
+                            console.log('[Retell Chat] Unwrapping Airtable "fields" from webhook response');
+                            webhookVariables = { ...webhookVariables, ...webhookVariables.fields };
+                            // We keep raw ID but prioritize fields
+                        }
+
+                        // 2. Logic to unwrap if the webhook returns { dynamic_variables: { ... } }
                         if (webhookVariables.dynamic_variables && typeof webhookVariables.dynamic_variables === 'object') {
                             console.log('[Retell Chat] Unwrapping nested dynamic_variables from webhook response');
                             webhookVariables = { ...webhookVariables, ...webhookVariables.dynamic_variables };

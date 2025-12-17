@@ -91,7 +91,8 @@ export async function getProject(id: string): Promise<ProjectData | null> {
             CompanyName: record.get('CompanyName') as string,
             KnowledgeBaseSummary: record.get('KnowledgeBaseSummary') as string,
             Status: record.get('Status') as string,
-            AirtableProspectId: (record.get('Prospect') as string[])?.[0] || undefined
+            AirtableProspectId: (record.get('Prospect') as string[])?.[0] || undefined,
+            demoUrl: record.get('DemoURL') as string
         };
     } catch (error) {
         console.error("Airtable Fetch Error:", error);
@@ -158,7 +159,8 @@ export async function getLead(id: string): Promise<Lead | null> {
             address: record.get('location') as string,
             status: record.get('pipeline_stage') as any, // 'pipeline_stage' seems to be status
             notes: record.get('notes') as string,
-            source: 'Airtable' // Default source since it's not in the log
+            source: 'Airtable', // Default source since it's not in the log
+            previewId: (record.get('Previews') as string[])?.[0]
         };
     } catch (error: any) {
         console.error("Error fetching lead:", error?.message || JSON.stringify(error));

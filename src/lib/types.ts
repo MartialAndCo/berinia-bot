@@ -6,6 +6,7 @@ export interface ProjectData {
     KnowledgeBaseSummary: string;
     Status?: string; // e.g. 'Active', 'Inactive'
     AirtableProspectId?: string; // The ID of the linked Prospect record
+    demoUrl?: string;
 }
 
 export interface ScrapingMission {
@@ -29,4 +30,5 @@ export interface Lead {
     source: string; // e.g. "Google Maps", "LinkedIn"
     status: 'New' | 'Contacted' | 'Qualified' | 'Closed';
     notes?: string;
+    previewId?: string;
 }

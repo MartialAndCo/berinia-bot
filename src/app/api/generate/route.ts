@@ -3,12 +3,46 @@ import { NextResponse } from 'next/server';
 import { scrapeSite } from '@/lib/scraper';
 import { analyzeSiteContent } from '@/lib/analyzer';
 import { createRetellProject } from '@/lib/retell';
-import { saveProject, updateProject } from '@/lib/airtable';
+import { saveProject, updateProject, getLead, getProject } from '@/lib/airtable';
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
         const { url, recordId } = body;
+
+        // Check for existing demo (Deduplication)
+        if (recordId) {
+            const lead = await getLead(recordId);
+            const existingPreviewId = lead?.previewId;
+
+            if (existingPreviewId) {
+                console.log(`Found existing demo project: ${existingPreviewId} for lead ${recordId}`);
+                const existingProject = await getProject(existingPreviewId);
+
+                if (existingProject) {
+                    const origin = request.headers.get('origin');
+                    const host = request.headers.get('host');
+                    let baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+                    if (!baseUrl && origin) { baseUrl = origin; }
+                    else if (!baseUrl && host) { const protocol = request.headers.get('x-forwarded-proto') || 'http'; baseUrl = `${protocol}://${host}`; }
+                    baseUrl = baseUrl || 'https://demo.berinia.com';
+
+                    return NextResponse.json({
+                        status: 'success',
+                        projectId: existingPreviewId,
+                        previewUrl: existingProject.demoUrl || `${baseUrl}/preview/${existingPreviewId}`,
+                        agentId: process.env.NEXT_PUBLIC_VOICE_AGENT_ID,
+                        companyName: existingProject.CompanyName
+                    }, {
+                        headers: {
+                            'Access-Control-Allow-Origin': '*',
+                            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                        }
+                    });
+                }
+            }
+        }
 
         if (!url) {
             return NextResponse.json({ error: 'URL is required' }, { status: 400 });

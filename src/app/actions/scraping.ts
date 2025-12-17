@@ -117,6 +117,11 @@ export async function deleteMission(id: string) {
 
 export async function getApifyRuns() {
     try {
+        if (!process.env.APIFY_API_TOKEN) {
+            console.warn("Skipping getApifyRuns: APIFY_API_TOKEN not set.");
+            return [];
+        }
+
         // Fetch last 10 runs to avoid timeout/slowness
         const runsList = await client.runs().list({
             desc: true,

@@ -190,7 +190,11 @@ export default function ScrapPage() {
                                     <input
                                         type="number"
                                         value={maxLeads}
-                                        onChange={(e) => setMaxLeads(parseInt(e.target.value))}
+                                        onChange={(e) => {
+                                            const val = parseInt(e.target.value);
+                                            if (!isNaN(val)) setMaxLeads(val);
+                                            else if (e.target.value === '') setMaxLeads(0); // or handle as empty if state allows, but 0 or default is safer for strict number state
+                                        }}
                                         className="w-full p-4 bg-gray-950 border border-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500/50 outline-none text-white transition-all"
                                         min={1}
                                         max={100}

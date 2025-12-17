@@ -2,17 +2,27 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Loader2, Phone, Mic, PhoneOff } from 'lucide-react';
-import { ProjectData } from '@/lib/types';
+import { ProjectData, Lead } from '@/lib/types';
 import { CustomTextAgent } from '@/components/CustomTextAgent';
 import { RetellWebClient } from 'retell-client-js-sdk';
 
 const retellWebClient = new RetellWebClient();
 
-
-
-export function PreviewClient({ project, prospectId }: { project: ProjectData; prospectId: string }) {
+export function PreviewClient({ project, prospectId, lead }: { project: ProjectData; prospectId: string; lead?: Lead | null }) {
     const [showCalendar, setShowCalendar] = useState(false);
     const calendarRef = useRef<HTMLDivElement>(null);
+
+    // Construct Cal.com URL with pre-filled data
+    let calUrl = "https://cal.com/berinia/demo?layout=month_view&timeFormat=12";
+    if (lead) {
+        const name = `${lead.firstName || ''} ${lead.lastName || ''}`.trim();
+        if (name) calUrl += `&name=${encodeURIComponent(name)}`;
+        if (lead.email) calUrl += `&email=${encodeURIComponent(lead.email)}`;
+        if (lead.phone) calUrl += `&phone=${encodeURIComponent(lead.phone)}`;
+        if (lead.companyName) calUrl += `&notes=${encodeURIComponent("Company: " + lead.companyName)}`;
+    }
+
+    console.log('[Preview Debug] Final Cal URL:', calUrl);
 
     // Use Ref for stable client instance across renders
     const retellWebClientRef = useRef<RetellWebClient | null>(null); // Keeping this for safety but restoring global mainly
@@ -271,7 +281,7 @@ export function PreviewClient({ project, prospectId }: { project: ProjectData; p
                     >
                         {showCalendar ? (
                             <iframe
-                                src="https://cal.com/berinia/demo?layout=month_view&timeFormat=12"
+                                src={calUrl}
                                 className="w-full h-full"
                                 title="Book a meeting"
                                 loading="lazy"

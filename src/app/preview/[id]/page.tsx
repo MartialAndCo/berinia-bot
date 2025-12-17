@@ -1,4 +1,4 @@
-import { getProject } from '@/lib/airtable';
+import { getProject, getLead } from '@/lib/airtable';
 import { PreviewClient } from './PreviewClient';
 import Link from 'next/link';
 
@@ -48,6 +48,12 @@ export default async function PreviewPage({ params }: PageProps) {
         );
     }
 
+
     const targetId = project.AirtableProspectId || id;
-    return <PreviewClient project={project} prospectId={targetId} />;
+    console.log('[Preview Debug] Target ID for Lead:', targetId);
+
+    const lead = await getLead(targetId);
+    console.log('[Preview Debug] Fetched Lead Data:', JSON.stringify(lead, null, 2));
+
+    return <PreviewClient project={project} prospectId={targetId} lead={lead} />;
 }

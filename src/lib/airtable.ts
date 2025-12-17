@@ -102,7 +102,7 @@ export async function getProject(id: string): Promise<ProjectData | null> {
 import { ScrapingMission } from './types';
 
 const configTableId = process.env.AIRTABLE_CONFIG_TABLE_ID || 'tblConfig'; // Use ID or Name if ID not set
-const leadsTableId = process.env.AIRTABLE_LEADS_TABLE_ID || 'tblLeads'; // Use ID or Name
+const leadsTableId = process.env.AIRTABLE_LEADS_TABLE_ID || 'Prospects'; // Use ID or Name
 
 // ... (existing exports)
 
@@ -136,6 +136,33 @@ export async function createLead(lead: Lead): Promise<string | null> {
     } catch (error) {
         console.error("Error creating lead:", error);
         throw error;
+    }
+}
+
+
+
+export async function getLead(id: string): Promise<Lead | null> {
+    if (!base) return null;
+
+    try {
+        const record = await base(leadsTableId).find(id);
+        // console.log('[Airtable Debug] Raw Record Fields:', JSON.stringify(record.fields, null, 2));
+
+        return {
+            firstName: record.get('first_name') as string, // Assuming it exists even if empty in log
+            lastName: record.get('last_name') as string,
+            email: record.get('email') as string,
+            companyName: record.get('business_name') as string,
+            website: record.get('website_url') as string,
+            phone: record.get('phone') as string,
+            address: record.get('location') as string,
+            status: record.get('pipeline_stage') as any, // 'pipeline_stage' seems to be status
+            notes: record.get('notes') as string,
+            source: 'Airtable' // Default source since it's not in the log
+        };
+    } catch (error: any) {
+        console.error("Error fetching lead:", error?.message || JSON.stringify(error));
+        return null;
     }
 }
 

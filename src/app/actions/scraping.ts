@@ -3,10 +3,14 @@
 import { ApifyClient } from 'apify-client';
 import { getActiveScrapingMissions, getAllScrapingMissions } from '@/lib/airtable';
 
-// Initialize Apify Client
-const client = new ApifyClient({
-    token: process.env.APIFY_API_TOKEN,
-});
+// Helper to get client at runtime (avoids build-time/module-scope env issues)
+function getClient() {
+    const token = process.env.APIFY_API_TOKEN;
+    if (!token) {
+        throw new Error("Configuration Error: APIFY_API_TOKEN is missing on server.");
+    }
+    return new ApifyClient({ token });
+}
 
 export async function triggerApifyScraping(data: {
     keyword: string;
@@ -78,7 +82,7 @@ export async function triggerApifyScraping(data: {
         // Apify Client `call` waits for finish. `start` just starts.
         // Let's use `start` to avoid Vercel/Amplify timeouts.
 
-        const run = await client.actor("compass/crawler-google-places").start(input, options as any);
+        const run = await getClient().actor("compass/crawler-google-places").start(input, options as any);
 
         return { success: true, runId: run.id };
 
@@ -135,7 +139,7 @@ export async function getApifyRuns() {
         }
 
         // Fetch last 10 runs to avoid timeout/slowness
-        const runsList = await client.runs().list({
+        const runsList = await getClient().runs().list({
             desc: true,
             limit: 10
         });
@@ -150,6 +154,7 @@ export async function getApifyRuns() {
                 // 1. Fetch Input
                 // Use a tighter timeout or catch specific errors
                 if (run.defaultKeyValueStoreId) {
+                    const client = getClient();
                     const inputRecord = await client.keyValueStore(run.defaultKeyValueStoreId).getRecord('INPUT');
                     const inputToCheck = inputRecord?.value as any;
 
@@ -172,7 +177,7 @@ export async function getApifyRuns() {
 
                 // 2. Fetch Dataset Info
                 if (run.defaultDatasetId) {
-                    const dataset = await client.dataset(run.defaultDatasetId).get();
+                    const dataset = await getClient().dataset(run.defaultDatasetId).get();
                     itemCount = dataset?.itemCount || 0;
                 }
 
@@ -184,7 +189,7 @@ export async function getApifyRuns() {
             let maxLeads = 20;
             try {
                 if (run.defaultKeyValueStoreId) {
-                    const inputRecord = await client.keyValueStore(run.defaultKeyValueStoreId).getRecord('INPUT');
+                    const inputRecord = await getClient().keyValueStore(run.defaultKeyValueStoreId).getRecord('INPUT');
                     const val = inputRecord?.value as any;
                     if (val?.maxCrawledPlacesPerSearch) {
                         maxLeads = val.maxCrawledPlacesPerSearch;

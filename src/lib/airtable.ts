@@ -119,17 +119,17 @@ export async function createLead(lead: Lead): Promise<string | null> {
         const records = await base(leadsTableId).create([
             {
                 fields: {
-                    "First Name": lead.firstName,
-                    "Last Name": lead.lastName,
-                    "Company": lead.companyName,
-                    "Website": lead.website,
-                    "Email": lead.email,
-                    "Phone": lead.phone,
-                    "Address": lead.address,
-                    "LinkedIn": lead.linkedIn,
-                    "Source": lead.source,
-                    "Status": lead.status,
-                    "Notes": lead.notes
+                    "first_name": lead.firstName,
+                    "last_name": lead.lastName,
+                    "business_name": lead.companyName,
+                    "website_url": lead.website,
+                    "email": lead.email,
+                    "phone": lead.phone,
+                    "location": lead.address,
+                    // "LinkedIn": lead.linkedIn, // Field not confirmed in logs, commenting out to be safe or check if exists? Assumed 'linkedin_profile' or similar?
+                    // "Source": lead.source, // Field not confirmed
+                    "pipeline_stage": lead.status, // Status maps to pipeline_stage
+                    "notes": lead.notes
                 }
             }
         ]);

@@ -6,7 +6,7 @@ async function test() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                agentId: 'agent_4057218664665a9a5fccb3224e',
+                agentId: 'const AGENT_ID = 'agent_728d2c4ee1235e28ce8c44e676';',
                 dynamicVariables: {
                     prospectId: 'recG6jbDctVzAEMsw',
                     business_name: 'TestBusiness'

@@ -35,8 +35,9 @@ export async function triggerApifyScraping(data: {
          }
         */
 
+        const searchString = `${data.keyword} in ${data.location}`;
         const input = {
-            searchStringsArray: [`${data.keyword} in ${data.location}`],
+            searchStringsArray: [searchString],
             maxCrawledPlacesPerSearch: data.maxLeads,
             language: "en",
         };
@@ -47,10 +48,21 @@ export async function triggerApifyScraping(data: {
             throw new Error("Missing N8N_INGESTION_WEBHOOK in env. All scraping must be sent to n8n.");
         }
 
+        // Construct webhook URL with query parameters to pass metadata to n8n
+        let webhookUrl = process.env.N8N_INGESTION_WEBHOOK;
+        try {
+            const urlObj = new URL(webhookUrl);
+            urlObj.searchParams.append('query', searchString);
+            urlObj.searchParams.append('max', data.maxLeads.toString());
+            webhookUrl = urlObj.toString();
+        } catch (e) {
+            console.warn("Could not parse N8N webhook URL to append params:", e);
+        }
+
         const options = {
             webhooks: [{
                 eventTypes: ['ACTOR.RUN.SUCCEEDED'],
-                requestUrl: process.env.N8N_INGESTION_WEBHOOK,
+                requestUrl: webhookUrl,
             }]
         };
 

@@ -44,6 +44,8 @@ export async function triggerApifyScraping(data: {
         const input = {
             searchStringsArray: [searchString],
             maxCrawledPlacesPerSearch: data.maxLeads,
+            maxCrawledPlaces: data.maxLeads, // Fallback for other actor versions
+            maxItems: data.maxLeads, // Generic fallback
             language: "en",
         };
 

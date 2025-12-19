@@ -14,7 +14,8 @@ export async function triggerApifyScraping(data: {
     maxLeads: number;
 }) {
     if (!process.env.APIFY_API_TOKEN) {
-        throw new Error("APIFY_API_TOKEN is not configured");
+        console.error("Scraping Trigger Failed: APIFY_API_TOKEN missing");
+        return { success: false, error: "Configuration Error: APIFY_API_TOKEN is missing on server." };
     }
 
     try {
@@ -43,9 +44,8 @@ export async function triggerApifyScraping(data: {
         };
 
         if (!process.env.N8N_INGESTION_WEBHOOK) {
-            console.warn("N8N_INGESTION_WEBHOOK is not configured! Scraping data will NOT be sent to n8n.");
-            // Per user request, this is mandatory:
-            throw new Error("Missing N8N_INGESTION_WEBHOOK in env. All scraping must be sent to n8n.");
+            console.error("Scraping Trigger Failed: N8N_INGESTION_WEBHOOK missing");
+            return { success: false, error: "Configuration Error: N8N_INGESTION_WEBHOOK is missing on server. Check Vercel/Amplify vars." };
         }
 
         // Construct webhook URL with query parameters to pass metadata to n8n
